@@ -231,10 +231,13 @@ const REGISTRATION_WINDOW_SECONDS = 60 * 60;
 const REGISTRATION_MAX_ATTEMPTS = 5;
 
 /** Apply a separate IP-based quota to public account creation. */
-export async function consumeRegistrationRateLimit(clientAddress: string): Promise<RateLimitDecision> {
+export async function consumeRegistrationRateLimit(
+  clientAddress: string,
+  action: "create-account" | "resend-verification" = "create-account"
+): Promise<RateLimitDecision> {
   const secret = getRateLimitSecret();
   const keyHash = createHmac("sha256", secret)
-    .update(`registration:create-account:${clientAddress}`)
+    .update(`registration:${action}:${clientAddress}`)
     .digest("hex");
 
   const rows = await prisma.$queryRaw<
