@@ -38,3 +38,7 @@ Apply the schema migration during deployment using `npx prisma migrate deploy`. 
 The persisted TOTP time-step counter uses PostgreSQL `BIGINT` / Prisma `BigInt` to avoid 32-bit integer overflow over the lifetime of the service. The counter is converted to a JavaScript `bigint` only at the database boundary; it is not exposed in API responses.
 
 MFA setup, confirmation, and disable endpoints also enforce an account-scoped 10-attempt/15-minute quota in addition to the client-network quota. The account bucket uses a keyed digest and does not persist the user identifier.
+
+## MFA security audit trail
+
+Account-level MFA events are stored in `user_security_events`, independently of workspace membership. The trail records setup initiation, successful MFA enable/disable, recovery-code rotation, and selected failed reauthentication or factor-verification attempts. Each record contains only the account ID, a fixed event type, success/failure outcome, an allow-listed reason code, and timestamp. Passwords, TOTP values, recovery codes, encrypted secrets, request bodies, and network addresses are never stored in these audit records. Audit writes are best-effort and do not change the result of an MFA operation.

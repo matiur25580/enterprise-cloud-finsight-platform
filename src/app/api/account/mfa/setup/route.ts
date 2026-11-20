@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { createTotpSecret, createTotpUri, encryptTotpSecret } from "@/lib/mfa";
 import { readLimitedJson } from "@/lib/request-body";
 import { enforceMfaRateLimit, enforceMfaAccountRateLimit } from "@/lib/mfa-rate-limit";
+import { recordMfaSecurityEvent } from "@/lib/mfa-security-audit";
 
 export const runtime = "nodejs";
 const schema = z.object({ password: z.string().min(8).max(128) });
@@ -31,9 +32,13 @@ export async function POST(request: Request) {
     select: { email: true, passwordHash: true, mfaEnabledAt: true, mfaSecretEncrypted: true }
   });
   if (!user?.passwordHash || !(await compare(parsed.data.password, user.passwordHash))) {
+    await recordMfaSecurityEvent(userId, "MFA_SETUP", "FAILURE", "PASSWORD_REJECTED");
     return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
   }
-  if (user.mfaEnabledAt) return NextResponse.json({ error: "MFA is already enabled." }, { status: 409 });
+  if (user.mfaEnabledAt) {
+    await recordMfaSecurityEvent(userId, "MFA_SETUP", "FAILURE", "ALREADY_ENABLED");
+    return NextResponse.json({ error: "MFA is already enabled." }, { status: 409 });
+  }
 
   const secret = createTotpSecret();
   const encrypted = encryptTotpSecret(secret);
@@ -54,6 +59,7 @@ export async function POST(request: Request) {
     );
   }
 
+  await recordMfaSecurityEvent(userId, "MFA_SETUP", "SUCCESS");
   return NextResponse.json({
     secret,
     otpauthUri: createTotpUri(secret, user.email),

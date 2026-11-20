@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAndConsumeMfaFactor } from "@/lib/mfa";
 import { readLimitedJson } from "@/lib/request-body";
 import { enforceMfaRateLimit, enforceMfaAccountRateLimit } from "@/lib/mfa-rate-limit";
+import { recordMfaSecurityEvent } from "@/lib/mfa-security-audit";
 
 export const runtime = "nodejs";
 const schema = z.object({
@@ -34,13 +35,18 @@ export async function POST(request: Request) {
     select: { passwordHash: true, mfaSecretEncrypted: true, mfaEnabledAt: true }
   });
   if (!user?.passwordHash || !(await compare(parsed.data.password, user.passwordHash))) {
+    await recordMfaSecurityEvent(userId, "MFA_DISABLE", "FAILURE", "PASSWORD_REJECTED");
     return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
   }
   if (!user.mfaEnabledAt || !user.mfaSecretEncrypted) {
+    await recordMfaSecurityEvent(userId, "MFA_DISABLE", "FAILURE", "NOT_CONFIGURED");
     return NextResponse.json({ error: "MFA is not enabled." }, { status: 409 });
   }
   const valid = await verifyAndConsumeMfaFactor(userId, user.mfaSecretEncrypted, parsed.data.code);
-  if (!valid) return NextResponse.json({ error: "Authenticator or recovery code is incorrect." }, { status: 403 });
+  if (!valid) {
+    await recordMfaSecurityEvent(userId, "MFA_DISABLE", "FAILURE", "INVALID_FACTOR");
+    return NextResponse.json({ error: "Authenticator or recovery code is incorrect." }, { status: 403 });
+  }
 
   const disabled = await prisma.$transaction(async (tx) => {
     // Compare-and-set against the exact MFA configuration that was verified above.
@@ -60,7 +66,9 @@ export async function POST(request: Request) {
   });
 
   if (!disabled) {
+    await recordMfaSecurityEvent(userId, "MFA_DISABLE", "FAILURE", "CONCURRENT_CHANGE");
     return NextResponse.json({ error: "MFA settings changed. Refresh and try again." }, { status: 409 });
   }
+  await recordMfaSecurityEvent(userId, "MFA_DISABLE", "SUCCESS");
   return NextResponse.json({ disabled: true });
 }

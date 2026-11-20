@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { createRecoveryCodes, decryptTotpSecret, getMatchingTotpTimeStep, hashRecoveryCode } from "@/lib/mfa";
 import { readLimitedJson } from "@/lib/request-body";
 import { enforceMfaRateLimit, enforceMfaAccountRateLimit } from "@/lib/mfa-rate-limit";
+import { recordMfaSecurityEvent } from "@/lib/mfa-security-audit";
 
 export const runtime = "nodejs";
 const schema = z.object({
@@ -34,10 +35,17 @@ export async function POST(request: Request) {
     select: { passwordHash: true, mfaSecretEncrypted: true, mfaEnabledAt: true }
   });
   if (!user?.passwordHash || !(await compare(parsed.data.password, user.passwordHash))) {
+    await recordMfaSecurityEvent(userId, "MFA_ENABLE", "FAILURE", "PASSWORD_REJECTED");
     return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
   }
-  if (user.mfaEnabledAt) return NextResponse.json({ error: "MFA is already enabled." }, { status: 409 });
-  if (!user.mfaSecretEncrypted) return NextResponse.json({ error: "Start MFA setup first." }, { status: 409 });
+  if (user.mfaEnabledAt) {
+    await recordMfaSecurityEvent(userId, "MFA_ENABLE", "FAILURE", "ALREADY_ENABLED");
+    return NextResponse.json({ error: "MFA is already enabled." }, { status: 409 });
+  }
+  if (!user.mfaSecretEncrypted) {
+    await recordMfaSecurityEvent(userId, "MFA_ENABLE", "FAILURE", "NOT_CONFIGURED");
+    return NextResponse.json({ error: "Start MFA setup first." }, { status: 409 });
+  }
 
   let matchedTimeStep: number | null = null;
   try {
@@ -45,7 +53,10 @@ export async function POST(request: Request) {
   } catch {
     matchedTimeStep = null;
   }
-  if (matchedTimeStep === null) return NextResponse.json({ error: "Authenticator code is incorrect or expired." }, { status: 400 });
+  if (matchedTimeStep === null) {
+    await recordMfaSecurityEvent(userId, "MFA_ENABLE", "FAILURE", "INVALID_TOTP");
+    return NextResponse.json({ error: "Authenticator code is incorrect or expired." }, { status: 400 });
+  }
 
   const codes = createRecoveryCodes();
   const now = new Date();
@@ -62,9 +73,11 @@ export async function POST(request: Request) {
       });
     });
   } catch {
+    await recordMfaSecurityEvent(userId, "MFA_ENABLE", "FAILURE", "CONCURRENT_CHANGE");
     return NextResponse.json({ error: "Unable to enable MFA. Please restart setup." }, { status: 409 });
   }
 
+  await recordMfaSecurityEvent(userId, "MFA_ENABLE", "SUCCESS");
   return NextResponse.json({
     enabled: true,
     recoveryCodes: codes,

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { createRecoveryCodes, hashRecoveryCode, verifyAndConsumeMfaFactor } from "@/lib/mfa";
 import { readLimitedJson } from "@/lib/request-body";
 import { enforceMfaRateLimit } from "@/lib/mfa-rate-limit";
+import { recordMfaSecurityEvent } from "@/lib/mfa-security-audit";
 
 export const runtime = "nodejs";
 const schema = z.object({
@@ -31,13 +32,18 @@ export async function POST(request: Request) {
     select: { passwordHash: true, mfaSecretEncrypted: true, mfaEnabledAt: true }
   });
   if (!user?.passwordHash || !(await compare(parsed.data.password, user.passwordHash))) {
+    await recordMfaSecurityEvent(userId, "MFA_RECOVERY_CODES", "FAILURE", "PASSWORD_REJECTED");
     return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
   }
   if (!user.mfaEnabledAt || !user.mfaSecretEncrypted) {
+    await recordMfaSecurityEvent(userId, "MFA_RECOVERY_CODES", "FAILURE", "NOT_CONFIGURED");
     return NextResponse.json({ error: "MFA is not enabled." }, { status: 409 });
   }
   const valid = await verifyAndConsumeMfaFactor(userId, user.mfaSecretEncrypted, parsed.data.code);
-  if (!valid) return NextResponse.json({ error: "Authenticator or recovery code is incorrect." }, { status: 403 });
+  if (!valid) {
+    await recordMfaSecurityEvent(userId, "MFA_RECOVERY_CODES", "FAILURE", "INVALID_FACTOR");
+    return NextResponse.json({ error: "Authenticator or recovery code is incorrect." }, { status: 403 });
+  }
 
   const codes = createRecoveryCodes();
   await prisma.$transaction(async (tx) => {
@@ -46,6 +52,7 @@ export async function POST(request: Request) {
       data: codes.map((code) => ({ userId, codeHash: hashRecoveryCode(code) }))
     });
   });
+  await recordMfaSecurityEvent(userId, "MFA_RECOVERY_CODES", "SUCCESS");
   return NextResponse.json({
     recoveryCodes: codes,
     message: "New recovery codes created. Previous codes are no longer valid."
