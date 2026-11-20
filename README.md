@@ -4,7 +4,7 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Browser CSV upload, email verification, MFA, and production cloud integrations remain outstanding.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Browser CSV upload, email verification, MFA, and production cloud integrations remain outstanding.
 
 ## Implemented foundation
 
@@ -15,6 +15,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - CSV billing parser with strict validation, row-level error capture, stable fingerprints, duplicate-safe inserts, and import audit history.
 - Auth.js credentials authentication, bcrypt password hashing, organization bootstrap, JWT sessions, and server-side RBAC guards.
 - Live cost analytics: 7/30/90-day and month-to-date windows, prior-period comparison, daily and six-month monthly trends, provider/account and service breakdowns, month-end run-rate estimates, and active budget utilization. Currency totals are never combined across currencies.
+- Cost intelligence: 14-calendar-day service baselines with a minimum of 7 observations, 2x/3σ spike thresholds, configured budget threshold alerts, and ranked optimization scenarios using an explicitly disclosed illustrative 5% reduction assumption.
 - GitHub Actions workflow for linting, TypeScript checks, and builds.
 
 ## Planned capabilities
@@ -24,9 +25,9 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 | Cost intelligence | Tenant-scoped spend trends, service breakdowns, period comparisons, provider allocation, and budget utilization |
 | Data ingestion | Validated CSV imports and cloud billing integrations |
 | Allocation | Team, project, environment, and tag-based cost allocation |
-| Anomaly detection | Configurable baselines, thresholds, and explainable alerts |
+| Anomaly detection | 14-day service baseline, minimum sample guard, 2x/3σ spike rule, and explainable alerts |
 | Forecasting | Historical trend forecasts with confidence ranges |
-| Optimization | Evidence-backed recommendations and savings tracking |
+| Optimization | Ranked service review opportunities with transparent, illustrative savings scenarios; actual savings tracking remains planned |
 | Budgets | Budget ownership, thresholds, and notifications |
 | Governance | Authentication, organizations, RBAC, audit events, and approvals |
 | Reporting | Exportable reports and documented APIs |
@@ -95,7 +96,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 2 foundation — Initial database schema, migration, and tenant-scoped access helper.
 - [x] Phase 3 foundation — CSV parsing/validation, import history, row issues, idempotent fingerprints, and audit events. Authenticated upload UI/API remains outstanding.
 - [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI and exports remain outstanding.
-- [ ] Phase 5 — Anomaly detection, forecasting, and evidence-backed recommendations.
+- [x] Phase 5 foundation — Historical service-spend anomaly signals, budget threshold alerts, and explainable optimization scenarios. Persistent alert delivery, forecasting confidence ranges, and realized-savings tracking remain planned.
 - [ ] Phase 6 — Secure cloud provider integrations.
 - [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
 
