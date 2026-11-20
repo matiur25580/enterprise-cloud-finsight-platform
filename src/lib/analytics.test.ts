@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getAnalyticsWindow, projectMonthEnd } from "./analytics";
+import { getAnalyticsWindow, projectMonthEnd } from "./analytics-math";
 
 test("7 day window includes today and six preceding UTC dates", () => {
   const result = getAnalyticsWindow(new Date("2026-11-20T13:00:00.000Z"), "7d");
