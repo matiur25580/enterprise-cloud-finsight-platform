@@ -21,7 +21,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   let claimed: { id: string; budgetId: string; alert: {
     budgetName: string; currency: string; budgetAmount: number; spent: number;
     utilizationPercent: number; thresholdPercent: number; startsAt: string; endsAt: string;
-  }; metadata: Record<string, unknown> } | null = null;
+  }; metadata: Record<string, unknown>; skipChannels: string[] } | null = null;
   try {
     claimed = await withOrganization(prisma, organizationId, async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${organizationId}), hashtext(${alertId}))`;
@@ -51,7 +51,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
         entityType: "Budget", entityId: event.entityId,
         metadata: { alertEventId: event.id, thresholdPercent: alert.thresholdPercent }
       } });
-      return { id: event.id, budgetId: event.entityId, alert, metadata };
+      const previousResults = metadata.channelResults && typeof metadata.channelResults === "object" && !Array.isArray(metadata.channelResults) ? metadata.channelResults as Record<string, unknown> : {};\n      const skipChannels = Object.entries(previousResults).filter(([, result]) => result === "DELIVERED").map(([channel]) => channel);\n      return { id: event.id, budgetId: event.entityId, alert, metadata, skipChannels };
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "";
@@ -62,10 +62,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
     return NextResponse.json({ error: "Unable to prepare budget alert retry." }, { status: 500 });
   }
 
-  let outcome = { attempted: 0, delivered: 0 };
+  let outcome: { attempted: number; delivered: number; channelResults: Record<string, "DELIVERED" | "FAILED" | "SKIPPED"> } = { attempted: 0, delivered: 0, channelResults: {} };
   let deliveryStatus = "NOT_CONFIGURED";
   try {
-    outcome = await deliverBudgetThresholdAlert(claimed.alert);
+    outcome = await deliverBudgetThresholdAlert(claimed.alert, fetch, process.env, claimed.skipChannels);
     deliveryStatus = outcome.attempted === 0 ? "NOT_CONFIGURED"
       : outcome.delivered === outcome.attempted ? "DELIVERED"
       : outcome.delivered > 0 ? "PARTIAL" : "FAILED";
@@ -86,7 +86,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
         data: { metadata: {
           ...metadata, deliveryStatus, attempted: (typeof metadata.attempted === "number" ? metadata.attempted : 0) + outcome.attempted,
           delivered: (typeof metadata.delivered === "number" ? metadata.delivered : 0) + outcome.delivered,
-          channels, lastAttemptAt: new Date().toISOString()
+          channels, channelResults: { ...(metadata.channelResults && typeof metadata.channelResults === "object" && !Array.isArray(metadata.channelResults) ? metadata.channelResults as Record<string, unknown> : {}), ...outcome.channelResults }, lastAttemptAt: new Date().toISOString()
         } }
       });
     });
