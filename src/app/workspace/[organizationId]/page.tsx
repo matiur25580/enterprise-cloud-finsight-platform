@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrganizationPermission } from "@/lib/auth-guards";
-import { getCostAnalytics, type AnalyticsRange } from "@/lib/analytics";
+import { getCostAnalytics } from "@/lib/analytics";
+import type { AnalyticsRange } from "@/lib/analytics-math";
 
 const ranges: AnalyticsRange[] = ["7d", "30d", "90d", "month"];
 
@@ -40,7 +41,7 @@ export default async function OrganizationDashboard({
   }
 
   const analytics = await getCostAnalytics(organizationId, range);
-  const organizationName = "Organization workspace";
+  const organizationName = analytics.organizationName;
   const totalRecords = analytics.daily.length;
   const dailyMax = Math.max(1, ...analytics.daily.map((item) => item.spend));
   const serviceMax = Math.max(1, ...analytics.serviceBreakdown.map((item) => item.spend));
