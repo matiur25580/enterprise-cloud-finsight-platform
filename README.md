@@ -298,3 +298,10 @@ Each recorded snapshot stores both windows, spend totals, row counts, scope and 
 ### Savings realization and ROI analytics
 
 Open `/workspace/{organizationId}/reports/savings` for a currency-isolated summary of saved recommendation impact snapshots. The dashboard shows net realized savings, an explicitly normalized 30-day run rate, positive-impact snapshot rate, and reviewer-entered estimated monthly savings for implemented recommendations. It uses the latest 500 tenant-scoped impact snapshots and displays recent measured outcomes. The positive-impact rate is snapshot-based (not recommendation-based), and repeated snapshots can represent different periods for the same recommendation. The normalized run rate is a simple period-length normalization, not a forecast. Estimates and measured before/after changes are not audited ROI or proof of causation; no FX conversion is performed. Access requires `billing:read`; no new database migration is required.
+
+## Repository security automation
+
+- **CodeQL** analyzes JavaScript/TypeScript on pushes and pull requests targeting `main`, with a weekly scheduled scan. Findings are uploaded to GitHub code scanning when the repository's security features and permissions allow it.
+- **Dependabot** checks npm dependencies and GitHub Actions weekly and groups compatible minor/patch updates into reviewable pull requests. Major dependency upgrades remain separate for deliberate compatibility review.
+- Dependency update pull requests must pass the existing lint, unit-test, TypeScript and production-build workflow before merge. Review lockfile changes and release notes; do not merge automated upgrades solely because they are generated.
+- These workflows provide automated detection and update proposals; they do not replace secret scanning, branch protection, dependency vulnerability triage, or a production security review.
