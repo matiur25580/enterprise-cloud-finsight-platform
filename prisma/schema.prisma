@@ -65,6 +65,8 @@ model Organization {
   budgets         Budget[]
   auditLogs       AuditLog[]
   recommendations Recommendation[]
+  sharedCostAllocationRules SharedCostAllocationRule[]
+  sharedCostAllocationRuns SharedCostAllocationRun[]
   importBatches    ImportBatch[]
   cloudSyncJobs    CloudSyncJob[]
   invitations      OrganizationInvitation[]
@@ -296,4 +298,47 @@ model OrganizationInvitation {
   @@index([organizationId, createdAt(sort: Desc)])
   @@index([email, expiresAt])
   @@map("organization_invitations")
+}
+
+enum SharedCostAllocationMethod {
+  EQUAL
+  WEIGHTED
+  @@map("shared_cost_allocation_method")
+}
+
+model SharedCostAllocationRule {
+  id              String                     @id @default(cuid())
+  organizationId  String                     @map("organization_id")
+  name            String                     @db.VarChar(100)
+  servicePattern  String                     @map("service_pattern") @db.VarChar(160)
+  sourceTagKey    String                     @map("source_tag_key") @db.VarChar(120)
+  sourceTagValue  String                     @map("source_tag_value") @db.VarChar(160)
+  targetDimension String                     @map("target_dimension") @db.VarChar(32)
+  method          SharedCostAllocationMethod @default(EQUAL)
+  recipients      Json
+  isActive        Boolean                    @default(true) @map("is_active")
+  createdAt       DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization    Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs            SharedCostAllocationRun[]
+  @@index([organizationId, isActive, createdAt])
+  @@map("shared_cost_allocation_rules")
+}
+
+model SharedCostAllocationRun {
+  id              String                   @id @default(cuid())
+  organizationId  String                   @map("organization_id")
+  ruleId          String                   @map("rule_id")
+  startsAt        DateTime                 @map("starts_at") @db.Date
+  endsAt          DateTime                 @map("ends_at") @db.Date
+  matchedRecords  Int                      @default(0) @map("matched_records")
+  sourceTotals    Json                     @map("source_totals")
+  allocations     Json
+  createdByUserId String                   @map("created_by_user_id")
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rule            SharedCostAllocationRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, ruleId, createdAt(sort: Desc)])
+  @@map("shared_cost_allocation_runs")
 }
