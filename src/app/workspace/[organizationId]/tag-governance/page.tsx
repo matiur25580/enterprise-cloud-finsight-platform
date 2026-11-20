@@ -46,10 +46,12 @@ export default async function TagGovernancePage({ params }: { params: Promise<{ 
         </section>
         <section className="analytics-section"><div className="analytics-section-title"><h2>Remediation queue</h2><span>Largest unallocated exposure first · currency-isolated</span></div>
           {currencies.map((currency) => {
-            const gaps = reports.map((report) => {
+            const gaps = reports.flatMap((report) => {
               const item = report.data.byCurrency.find((entry) => entry.currency === currency);
-              return item ? { label: report.label, key: report.key, spend: item.unallocatedSpend, coverage: item.coveragePercent } : null;
-            }).filter((item): item is { label: string; key: typeof dimensions[number]["key"]; spend: number; coverage: number } => item !== null && item.spend > 0).sort((a, b) => b.spend - a.spend);
+              return item && item.unallocatedSpend > 0
+                ? [{ label: report.label, key: report.key, spend: item.unallocatedSpend, coverage: item.coveragePercent }]
+                : [];
+            }).sort((a, b) => b.spend - a.spend);
             return gaps.length ? <article className="analytics-panel" key={currency}><div className="analytics-panel-heading"><div><h2>{currency}</h2><p>Tagging gaps ranked by unallocated spend</p></div></div>
               {gaps.map((gap) => <div className="analytics-list-row" key={gap.key}><div><strong>{gap.label}</strong><span>{gap.coverage.toFixed(1)}% coverage · add or normalize the {gap.label.toLowerCase()} tag</span></div><div><strong>{money(gap.spend, currency)}</strong><span><Link href={"/workspace/" + organizationId + "/allocation?dimension=" + gap.key}>Review</Link></span></div></div>)}
             </article> : null;
