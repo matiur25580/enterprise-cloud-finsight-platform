@@ -101,36 +101,42 @@ export type BudgetThresholdAlert = {
 export async function deliverBudgetThresholdAlert(
   alert: BudgetThresholdAlert,
   fetcher: Fetcher = fetch,
-  env: AlertEnvironment = process.env
-): Promise<{ attempted: number; delivered: number }> {
+  env: AlertEnvironment = process.env,
+  skipChannels: string[] = []
+): Promise<{ attempted: number; delivered: number; channelResults: Record<string, "DELIVERED" | "FAILED" | "SKIPPED"> }> {
   const message = [
     "FinSight budget threshold reached",
     `Budget: ${alert.budgetName}`,
     `Spend: ${alert.spent.toFixed(2)} ${alert.currency} / ${alert.budgetAmount.toFixed(2)} ${alert.currency}`,
     `Utilization: ${alert.utilizationPercent.toFixed(1)}% (threshold ${alert.thresholdPercent}%)`,
     `Budget window: ${alert.startsAt} to ${alert.endsAt}`
-  ].join("\n");
-  const tasks: Promise<unknown>[] = [];
+  ].join("\\n");
+  const tasks: Array<{ channel: string; task: Promise<unknown> }> = [];
+  const channelResults: Record<string, "DELIVERED" | "FAILED" | "SKIPPED"> = {};
   const webhook = env.SLACK_SYNC_ALERT_WEBHOOK_URL;
-  if (webhook) {
+  if (skipChannels.includes("SLACK")) channelResults.SLACK = "SKIPPED";
+  else if (webhook) {
     const safeUrl = slackWebhookUrl(webhook);
-    if (safeUrl) tasks.push(fetcher(safeUrl, {
+    if (safeUrl) tasks.push({ channel: "SLACK", task: fetcher(safeUrl, {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ text: message }), signal: AbortSignal.timeout(10_000)
-    }).then((response) => { if (!response.ok) throw new Error("Slack budget alert delivery failed."); }));
+    }).then((response) => { if (!response.ok) throw new Error("Slack budget alert delivery failed."); }) });
   }
   const recipients = emailAddresses(env.SYNC_ALERT_EMAIL_TO);
-  if (env.RESEND_API_KEY && env.SYNC_ALERT_EMAIL_FROM && recipients.length > 0) {
-    tasks.push(fetcher("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        from: env.SYNC_ALERT_EMAIL_FROM, to: recipients,
-        subject: `FinSight budget alert: ${alert.budgetName} at ${alert.thresholdPercent}%`,
-        text: message
-      }), signal: AbortSignal.timeout(10_000)
-    }).then((response) => { if (!response.ok) throw new Error("Email budget alert delivery failed."); }));
-  }
-  const results = await Promise.allSettled(tasks);
-  return { attempted: tasks.length, delivered: results.filter((result) => result.status === "fulfilled").length };
+  const emailConfigured = Boolean(env.RESEND_API_KEY && env.SYNC_ALERT_EMAIL_FROM && recipients.length > 0);
+  if (skipChannels.includes("EMAIL")) channelResults.EMAIL = "SKIPPED";
+  else if (emailConfigured) tasks.push({ channel: "EMAIL", task: fetcher("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      from: env.SYNC_ALERT_EMAIL_FROM, to: recipients,
+      subject: `FinSight budget alert: ${alert.budgetName} at ${alert.thresholdPercent}%`,
+      text: message
+    }), signal: AbortSignal.timeout(10_000)
+  }).then((response) => { if (!response.ok) throw new Error("Email budget alert delivery failed."); }) });
+  const results = await Promise.all(tasks.map(async ({ channel, task }) => {
+    try { await task; channelResults[channel] = "DELIVERED"; return true; }
+    catch { channelResults[channel] = "FAILED"; return false; }
+  }));
+  return { attempted: tasks.length, delivered: results.filter(Boolean).length, channelResults };
 }
