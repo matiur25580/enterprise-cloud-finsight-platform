@@ -24,7 +24,9 @@ testCase("TOTP secrets are random and AES-GCM encrypted at rest", () => {
   assert.notEqual(encrypted, secret);
   assert.equal(decryptTotpSecret(encrypted), secret);
   assert.notEqual(encryptTotpSecret(secret), encrypted);
-  assert.throws(() => decryptTotpSecret(`${encrypted.slice(0, -1)}x`));
+  const [version, iv, tag, ciphertext] = encrypted.split(".");
+  const changedCiphertext = (ciphertext[0] === "A" ? "B" : "A") + ciphertext.slice(1);
+  assert.throws(() => decryptTotpSecret([version, iv, tag, changedCiphertext].join(".")));
 });
 
 testCase("recovery codes are unique, formatted and hashed consistently", () => {
