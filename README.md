@@ -41,7 +41,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - **Data:** PostgreSQL and Prisma ORM
 - **Security:** Auth.js JWT sessions, password hashing, server-side organization RBAC, and PostgreSQL Row-Level Security
 - **Quality:** ESLint, TypeScript checks, GitHub Actions
-- **Future:** background jobs, provider billing ingestion, allocation dimensions, anomaly detection, Vitest, Playwright, Docker, and deployment automation
+- **Future:** live provider billing API adapters, allocation dimensions, notification delivery, forecasting confidence ranges, Vitest, Playwright, Docker, and deployment automation
 
 ## Database model
 
