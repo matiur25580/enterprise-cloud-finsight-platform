@@ -28,7 +28,7 @@ function describeAction(action: string): string {
     SHARED_COST_ALLOCATION_RULE_STATUS_CHANGED: "Shared cost allocation rule status changed",
     SHARED_COST_ALLOCATION_APPLIED: "Shared cost allocation applied",
     BUSINESS_METRIC_RECORDED: "Business volume metric recorded",
-    REVENUE_RECORDED: "Revenue record added"
+    REVENUE_RECORDED: "Revenue record added",\n    RECOMMENDATION_CREATED: "Optimization recommendation created",\n    RECOMMENDATION_STATUS_CHANGED: "Optimization recommendation status changed"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
 }
