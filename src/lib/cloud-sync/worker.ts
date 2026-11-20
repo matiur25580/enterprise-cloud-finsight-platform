@@ -8,15 +8,15 @@ type ClaimedJob = { id: string; organization_id: string; cloud_account_id: strin
 
 export async function claimNextCloudSyncJob(): Promise<ClaimedJob | null> {
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw\`SELECT set_config('app.is_sync_worker', 'true', true)\`;
-    await tx.$executeRaw\`
+    await tx.$executeRaw`SELECT set_config('app.is_sync_worker', 'true', true)`;
+    await tx.$executeRaw`
       UPDATE cloud_sync_jobs
       SET status = 'FAILED', completed_at = NOW(), error_code = 'WORKER_LEASE_EXPIRED',
           error_message = 'Worker lease expired after the maximum number of attempts.', updated_at = NOW()
       WHERE status = 'RUNNING' AND started_at < NOW() - INTERVAL '10 minutes'
         AND attempt_count >= max_attempts
-    \`;
-    const jobs = await tx.$queryRaw<ClaimedJob[]>(Prisma.sql\`
+    `;
+    const jobs = await tx.$queryRaw<ClaimedJob[]>(Prisma.sql`
       WITH candidate AS (
         SELECT id FROM cloud_sync_jobs
         WHERE (status = 'QUEUED' AND available_at <= NOW())
@@ -29,7 +29,7 @@ export async function claimNextCloudSyncJob(): Promise<ClaimedJob | null> {
           started_at = NOW(), completed_at = NULL, updated_at = NOW()
       FROM candidate WHERE job.id = candidate.id
       RETURNING job.id, job.organization_id, job.cloud_account_id, job.attempt_count, job.max_attempts
-    \`);
+    `);
     return jobs[0] ?? null;
   });
 }
