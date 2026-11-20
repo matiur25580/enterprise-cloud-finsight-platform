@@ -22,7 +22,8 @@ function describeAction(action: string): string {
     BUDGET_UPDATED: "Budget updated",
     BUDGET_DELETED: "Budget deleted",
     BUDGET_THRESHOLD_ALERT_SENT: "Budget threshold alert recorded",
-    BUDGET_THRESHOLD_ALERT_RETRY_REQUESTED: "Budget threshold alert retry requested"
+    BUDGET_THRESHOLD_ALERT_RETRY_REQUESTED: "Budget threshold alert retry requested",
+    BUDGET_FORECAST_SNAPSHOT_CAPTURED: "Budget forecast snapshot captured"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
 }
