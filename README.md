@@ -280,3 +280,8 @@ Open **Executive report** from an organization workspace for a 90-day leadership
 ### FinOps recommendation lifecycle
 
 The organization workspace includes a governed recommendation backlog at `/workspace/{organizationId}/recommendations`. Authorized FinOps Analysts, Admins and Owners can capture an opportunity with provider, estimated monthly savings, currency, confidence and a written rationale. The lifecycle supports **New → Accepted → Implemented** or **Dismissed**, with dismissed items reopenable to New. Every creation and valid status transition writes an organization-scoped audit event. View access requires `billing:read`; write access requires `recommendations:review`. The workflow records reviewer-supplied estimates and evidence; it does not execute cloud changes, verify realized savings, or treat modeled savings as guaranteed outcomes.
+
+
+### Evidence-backed recommendation generation
+
+From the recommendation backlog, authorized FinOps Analysts, Admins and Owners can generate review items from current billing intelligence. The generator turns month-to-date high-spend services into transparent 5% illustrative scenarios and recent detected cost anomalies into investigation tasks. It records source metrics and a stable signal key in recommendation evidence, skips previously generated signals across all workflow states, and writes an audit event for each new item. Generation is idempotent for the same monthly service signal or anomaly date. No cloud resource is changed automatically; generated savings are estimates and anomaly tasks carry zero estimated savings until independently assessed. Endpoint: `POST /api/organizations/{organizationId}/recommendations/generate`.
