@@ -38,7 +38,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ orga
     const rows: unknown[][] = [["record_type","organization","period_start","period_end","name","currency","amount","record_count","notes"]];
     for (const row of costs) rows.push(["CLOUD_SERVICE_SPEND",organization?.name,start.toISOString().slice(0,10),end.toISOString().slice(0,10),row.service,row.currency,Number(row._sum.amount ?? 0),row._count._all,"Imported billing actual"]);
     for (const row of revenue) rows.push(["REPORTED_REVENUE",organization?.name,start.toISOString().slice(0,10),end.toISOString().slice(0,10),"All reported revenue",row.currency,Number(row._sum.amount ?? 0),row._count._all,"Manually reported; not inferred"]);
-    for (const budget of budgets) rows.push(["ACTIVE_BUDGET",organization?.name,budget.startsAt.toISOString().slice(0,10),budget.endsAt.toISOString().slice(0,10),budget.name,budget.currency,Number(budget.amount),null,"Current utilization: "+((spentByCurrency.get(budget.currency) ?? 0)/Number(budget.amount)*100).toFixed(2)+"%"]);
+    for (const budget of budgets) {
+      const budgetSpend = await tx.costRecord.aggregate({
+        where: { organizationId, currency: budget.currency, usageDate: { gte: budget.startsAt, lte: end } },
+        _sum: { amount: true }
+      });
+      const budgetAmount = Number(budget.amount);
+      const utilization = budgetAmount > 0 ? Number(budgetSpend._sum.amount ?? 0) / budgetAmount * 100 : 0;
+      rows.push(["ACTIVE_BUDGET",organization?.name,budget.startsAt.toISOString().slice(0,10),budget.endsAt.toISOString().slice(0,10),budget.name,budget.currency,budgetAmount,null,"Current utilization: "+utilization.toFixed(2)+"%"]);
+    }
     return rows;
   });
   const csv = "\uFEFF" + data.map((row) => row.map(cell).join(",")).join("\r\n");
