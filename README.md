@@ -325,3 +325,27 @@ npm run db:generate
 ```
 
 This baseline protects the Auth.js credentials callback. Other public or high-cost endpoints should receive route-specific limits as their abuse profiles are established; a single global limit is intentionally not imposed on all authenticated API traffic.
+
+
+### Authenticated API rate limits and security event monitoring
+
+High-cost organization APIs now use persistent, atomic PostgreSQL fixed-window counters keyed by a secret HMAC of organization, user and route bucket. Limits are independent per organization/user/route and shared across application instances:
+
+| Endpoint operation | Limit |
+| --- | ---: |
+| CSV billing import | 5 per 15 minutes |
+| Provider billing import | 5 per 15 minutes |
+| Cloud sync enqueue | 10 per 15 minutes |
+| Recommendation generation | 5 per hour |
+| Audit export | 10 per hour |
+
+Requests beyond a limit receive HTTP 429 with `Retry-After` and `X-RateLimit-*` headers. The counter storage uses the same global `api_rate_limit_buckets` table as credential login protection. On the first threshold crossing, a tenant-scoped security event is persisted; repeated blocked requests do not create an unbounded event stream. Raw user identifiers and client addresses are not stored in rate-limit keys or security events.
+
+Owners and Admins can review the latest 100 rate-limit violations from the previous 30 days at `GET /api/organizations/{organizationId}/security/events`. The event table has forced PostgreSQL row-level security and is queried only inside the active organization context. Structured server logs also emit a `api_rate_limit_exceeded` event on the initial threshold crossing.
+
+Apply all pending migrations before deploying:
+
+```bash
+npm run db:deploy
+npm run db:generate
+```
