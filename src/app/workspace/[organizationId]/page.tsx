@@ -63,7 +63,33 @@ export default async function OrganizationDashboard({
             <h1>Cost intelligence</h1>
             <p className="analytics-subtitle">{organizationName} · {analytics.startDate} to {analytics.endDate}</p>
           </div>
-          <div className="flex gap-3">{hasPermission(access.membership.role, "budgets:manage") ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/budgets"}>Budgets</Link> : <Link className="analytics-back" href={"/workspace/" + organizationId + "/budgets"}>Budget overview</Link>}{hasPermission(access.membership.role, "organization:manage") ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/settings"}>Workspace settings</Link> : null}{hasPermission(access.membership.role, "members:manage") ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/members"}>Members & access</Link> : null}<Link className="analytics-back" href={"/workspace/" + organizationId + "/cloud-accounts"}>Cloud accounts</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/billing"}>Import billing CSV</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/insights"}>Anomalies & optimization</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/recommendations"}>Recommendations</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/allocation"}>Cost allocation</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/tag-governance"}>Tag governance</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/kubernetes-costs"}>Kubernetes costs</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/business-metrics"}>Unit economics</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/revenue"}>Revenue vs cloud spend</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/reports/executive"}>Executive report</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/reports/savings"}>Savings & ROI</Link>{["OWNER", "ADMIN"].includes(access.membership.role) ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/security"}>Security activity</Link> : null}<Link className="analytics-back" href="/workspace">All workspaces</Link></div>
+          <nav className="analytics-nav" aria-label="Workspace navigation">
+            <div className="analytics-nav-group">
+              <span>Manage</span>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/budgets"}>Budgets</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/billing"}>Billing imports</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/cloud-accounts"}>Cloud accounts</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/members"}>Members</Link>
+              {hasPermission(access.membership.role, "organization:manage") ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/settings"}>Settings</Link> : null}
+            </div>
+            <div className="analytics-nav-group">
+              <span>Optimize</span>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/insights"}>Insights</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/recommendations"}>Recommendations</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/allocation"}>Cost allocation</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/kubernetes-costs"}>Kubernetes</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/tag-governance"}>Tag governance</Link>
+            </div>
+            <div className="analytics-nav-group">
+              <span>Business & reports</span>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/business-metrics"}>Unit economics</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/revenue"}>Revenue</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/reports/executive"}>Executive report</Link>
+              <Link className="analytics-back" href={"/workspace/" + organizationId + "/reports/savings"}>Savings & ROI</Link>
+              {["OWNER", "ADMIN"].includes(access.membership.role) ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/security"}>Security</Link> : null}
+            </div>
+            <Link className="analytics-back analytics-workspaces-link" href="/workspace">All workspaces</Link>
+          </nav>
         </div>
 
         <nav className="analytics-ranges" aria-label="Analytics date range">
