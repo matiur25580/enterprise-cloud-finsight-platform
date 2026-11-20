@@ -62,7 +62,7 @@ export default async function OrganizationDashboard({
             <h1>Cost intelligence</h1>
             <p className="analytics-subtitle">{organizationName} · {analytics.startDate} to {analytics.endDate}</p>
           </div>
-          <div className="flex gap-3"><Link className="analytics-back" href={"/workspace/" + organizationId + "/insights"}>Anomalies & optimization</Link><Link className="analytics-back" href="/workspace">All workspaces</Link></div>
+          <div className="flex gap-3"><Link className="analytics-back" href={"/workspace/" + organizationId + "/billing"}>Import billing CSV</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/insights"}>Anomalies & optimization</Link><Link className="analytics-back" href="/workspace">All workspaces</Link></div>
         </div>
 
         <nav className="analytics-ranges" aria-label="Analytics date range">
