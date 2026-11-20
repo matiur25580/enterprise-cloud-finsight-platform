@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOrganizationPermission } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
+import RetryBudgetAlertButton from "./retry-button";
 
 function statusLabel(status: string) {
   if (status === "DELIVERED") return "Delivered";
@@ -49,7 +50,7 @@ export default async function BudgetAlertsPage({ params }: { params: Promise<{ o
     </section>
     <section className="analytics-panel budget-alert-history">
       <div className="analytics-panel-heading"><h2>Notification events</h2><p>Provider HTTP acceptance is recorded; it does not guarantee final inbox delivery.</p></div>
-      {alerts.length ? <div className="budget-alert-table-wrap"><table className="budget-alert-table"><thead><tr><th>Budget / threshold</th><th>Spend at alert</th><th>Delivery</th><th>Channels</th><th>Recorded (UTC)</th></tr></thead><tbody>{alerts.map((alert) => <tr key={alert.id}><td><strong>{alert.budgetName}</strong><small>{alert.threshold}% threshold · {alert.utilization.toFixed(1)}% usage</small></td><td>{new Intl.NumberFormat("en-US", { style: "currency", currency: alert.currency || "USD" }).format(alert.spent)}</td><td><span className={"budget-alert-status " + alert.status.toLowerCase()}>{statusLabel(alert.status)}</span><small>{alert.delivered}/{alert.attempted} channels accepted</small></td><td>{alert.channels.length ? alert.channels.join(", ") : "None configured"}</td><td>{alert.createdAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC</td></tr>)}</tbody></table></div> : <div className="budget-empty"><h3>No budget alerts yet</h3><p>Threshold events will appear after a billing import crosses an active budget threshold.</p></div>}
+      {alerts.length ? <div className="budget-alert-table-wrap"><table className="budget-alert-table"><thead><tr><th>Budget / threshold</th><th>Spend at alert</th><th>Delivery</th><th>Channels</th><th>Recorded (UTC)</th><th>Action</th></tr></thead><tbody>{alerts.map((alert) => <tr key={alert.id}><td><strong>{alert.budgetName}</strong><small>{alert.threshold}% threshold · {alert.utilization.toFixed(1)}% usage</small></td><td>{new Intl.NumberFormat("en-US", { style: "currency", currency: alert.currency || "USD" }).format(alert.spent)}</td><td><span className={"budget-alert-status " + alert.status.toLowerCase()}>{statusLabel(alert.status)}</span><small>{alert.delivered}/{alert.attempted} channels accepted</small></td><td>{alert.channels.length ? alert.channels.join(", ") : "None configured"}</td><td>{alert.createdAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC<small>{alert.retryCount} retry attempt(s)</small></td><td><RetryBudgetAlertButton organizationId={organizationId} alertId={alert.id} status={alert.status} /></td></tr>)}</tbody></table></div> : <div className="budget-empty"><h3>No budget alerts yet</h3><p>Threshold events will appear after a billing import crosses an active budget threshold.</p></div>}
     </section>
   </main>;
 }
