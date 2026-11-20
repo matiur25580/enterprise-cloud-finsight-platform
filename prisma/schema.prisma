@@ -70,6 +70,7 @@ model Organization {
   importBatches    ImportBatch[]
   cloudSyncJobs    CloudSyncJob[]
   invitations      OrganizationInvitation[]
+  businessMetrics  BusinessMetric[]
   @@map("organizations")
 }
 
@@ -341,4 +342,22 @@ model SharedCostAllocationRun {
   @@index([organizationId, createdAt(sort: Desc)])
   @@index([organizationId, ruleId, createdAt(sort: Desc)])
   @@map("shared_cost_allocation_runs")
+}
+
+
+model BusinessMetric {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  metricName     String       @map("metric_name") @db.VarChar(100)
+  unit           String       @db.VarChar(40)
+  value          Decimal      @db.Decimal(20, 4)
+  metricDate     DateTime     @map("metric_date") @db.Date
+  source         String       @default("MANUAL") @db.VarChar(40)
+  notes          String?      @db.VarChar(500)
+  createdByUserId String      @map("created_by_user_id")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, metricDate])
+  @@index([organizationId, metricName, metricDate])
+  @@map("business_metrics")
 }
