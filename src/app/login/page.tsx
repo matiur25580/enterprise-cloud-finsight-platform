@@ -23,7 +23,8 @@ export default function LoginPage() {
       invalid: "That verification link is invalid. Request a new one below.",
       unavailable: "Verification could not be completed. Please try again."
     };
-    const message = status ? notices[status] : undefined;
+    const passwordReset = new URLSearchParams(window.location.search).get("passwordReset") === "success";
+    const message = passwordReset ? "Your password has been updated. You can now sign in." : status ? notices[status] : undefined;
     if (!message) return;
     const frame = window.requestAnimationFrame(() => setNotice(message));
     return () => window.cancelAnimationFrame(frame);

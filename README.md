@@ -25,7 +25,7 @@ A multi-tenant FinOps workspace for engineering, finance, and platform teams —
 | **Core workflows** | Cost analytics · budgets · forecasts · allocation · governance · security |
 | **Engineering quality** | ESLint · TypeScript · automated tests · GitHub Actions · CodeQL |
 
-> **Development status:** Active development. Core product workflows and the security foundation are implemented. Production provider credentials, external secret-backend configuration, email verification, MFA, and final deployment hardening require environment-specific setup and verification. This README distinguishes implemented application capabilities from operator configuration and future work.
+> **Development status:** Core product workflows and application security controls are implemented, including email verification, authenticator-based MFA, recovery codes, and email-based password reset. Production readiness still depends on environment-specific provider credentials, secret-backend configuration, database migrations, hosting setup, and live end-to-end verification. This README distinguishes implemented capabilities from operator configuration and deployment tasks.
 
 ## Dashboard gallery
 
@@ -174,6 +174,8 @@ The following 12 visuals are **illustrative dashboard concepts**, created to exp
 | Quality & security | ESLint, TypeScript, Node test runner, GitHub Actions, CodeQL |
 
 ## Getting started
+
+For container deployment, web/worker separation, production environment variables, database roles, Vault setup, migrations, health checks, and go-live verification, see [the production deployment runbook](docs/deployment/production.md).
 
 ### Prerequisites
 
@@ -542,6 +544,10 @@ Each recorded snapshot stores both windows, spend totals, row counts, scope and 
 ### Savings realization and ROI analytics
 
 Open `/workspace/{organizationId}/reports/savings` for a currency-isolated summary of saved recommendation impact snapshots. The dashboard shows net realized savings, an explicitly normalized 30-day run rate, positive-impact snapshot rate, and reviewer-entered estimated monthly savings for implemented recommendations. It uses the latest 500 tenant-scoped impact snapshots and displays recent measured outcomes. The positive-impact rate is snapshot-based (not recommendation-based), and repeated snapshots can represent different periods for the same recommendation. The normalized run rate is a simple period-length normalization, not a forecast. Estimates and measured before/after changes are not audited ROI or proof of causation; no FX conversion is performed. Access requires `billing:read`; no new database migration is required.
+
+## Account recovery
+
+Email verification, authenticator-app MFA with one-time recovery codes, and email-based password reset are implemented. Password reset links are single-use, expire after 30 minutes, and do not disable MFA. See [password reset security details](docs/security/password-reset.md) and [MFA setup](docs/security/mfa.md).
 
 ## Repository security automation
 
