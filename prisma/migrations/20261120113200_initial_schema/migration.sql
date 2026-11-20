@@ -39,8 +39,8 @@ CREATE TABLE "cloud_accounts" (
   CONSTRAINT "cloud_accounts_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE UNIQUE INDEX "cloud_accounts_organization_id_id_key" ON "cloud_accounts"("organization_id", "id");
-CREATE UNIQUE INDEX "cloud_accounts_org_provider_external_key" ON "cloud_accounts"("organization_id", "provider", "external_account_id");
-CREATE INDEX "cloud_accounts_org_provider_status_idx" ON "cloud_accounts"("organization_id", "provider", "status");
+CREATE UNIQUE INDEX "cloud_accounts_organization_id_provider_external_account_id_key" ON "cloud_accounts"("organization_id", "provider", "external_account_id");
+CREATE INDEX "cloud_accounts_organization_id_provider_status_idx" ON "cloud_accounts"("organization_id", "provider", "status");
 
 CREATE TABLE "cost_records" (
   "id" TEXT NOT NULL, "organization_id" TEXT NOT NULL, "cloud_account_id" TEXT NOT NULL,
