@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { FormEvent } from "react";
 
 type Role = "OWNER" | "ADMIN" | "FINOPS_ANALYST" | "VIEWER";
 type Member = { id: string; role: Role; createdAt: string; user: { id: string; name: string | null; email: string } };
@@ -25,7 +26,7 @@ export default function MemberManager({ organizationId, initialMembers, initialI
     setInvitations(data.invitations);
   }
 
-  async function invite(event: React.FormEvent<HTMLFormElement>) {
+  async function invite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage("");
     try {
       const response = await fetch(base, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, role }) });
