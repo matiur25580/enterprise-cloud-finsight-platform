@@ -3,7 +3,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -31,15 +30,7 @@ export default function RegisterPage() {
         setBusy(false);
         return;
       }
-      const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) {
-        setError("Your account was created. Please sign in.");
-        setBusy(false);
-        router.push("/login");
-        return;
-      }
-      router.push("/workspace");
-      router.refresh();
+      router.push("/verify-email");
     } catch {
       setError("A network error occurred. Please try again.");
       setBusy(false);
