@@ -1,0 +1,110 @@
+import "server-only";
+
+import { createHmac } from "node:crypto";
+import { prisma } from "@/lib/prisma";
+
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+const LOGIN_MAX_ATTEMPTS = 10;
+
+export type RateLimitDecision = {
+  allowed: boolean;
+  limit: number;
+  remaining: number;
+  resetAt: Date;
+};
+
+export function getRateLimitDecision(
+  requestCount: number,
+  limit: number,
+  windowStartedAt: Date,
+  windowSeconds: number
+): RateLimitDecision {
+  const resetAt = new Date(windowStartedAt.getTime() + windowSeconds * 1000);
+  return {
+    allowed: requestCount <= limit,
+    limit,
+    remaining: Math.max(0, limit - requestCount),
+    resetAt
+  };
+}
+
+/**
+ * Uses a keyed digest so raw client addresses are never persisted.
+ * The reverse proxy must overwrite forwarded-address headers.
+ */
+export async function consumeLoginRateLimit(clientAddress: string): Promise<RateLimitDecision> {
+  const secret =
+    process.env.AUTH_SECRET ??
+    process.env.NEXTAUTH_SECRET ??
+    "finsight-development-rate-limit-key";
+  const keyHash = createHmac("sha256", secret)
+    .update(`login:credentials:${clientAddress}`)
+    .digest("hex");
+
+  const rows = await prisma.$queryRaw<
+    Array<{ request_count: number; window_started_at: Date }>
+  >`
+    WITH expired AS (
+      DELETE FROM "api_rate_limit_buckets"
+      WHERE "key_hash" IN (
+        SELECT "key_hash"
+        FROM "api_rate_limit_buckets"
+        WHERE "expires_at" <= CURRENT_TIMESTAMP
+        ORDER BY "expires_at"
+        LIMIT 50
+      )
+      RETURNING 1
+    ),
+    cleanup AS (
+      SELECT COUNT(*) FROM expired
+    )
+    INSERT INTO "api_rate_limit_buckets"
+      ("key_hash", "window_started_at", "request_count", "expires_at")
+    SELECT
+      ${keyHash},
+      CURRENT_TIMESTAMP,
+      1,
+      CURRENT_TIMESTAMP + (${LOGIN_WINDOW_SECONDS} * INTERVAL '1 second')
+    FROM cleanup
+    ON CONFLICT ("key_hash") DO UPDATE SET
+      "request_count" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${LOGIN_WINDOW_SECONDS} * INTERVAL '1 second')
+        THEN 1
+        ELSE "api_rate_limit_buckets"."request_count" + 1
+      END,
+      "window_started_at" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${LOGIN_WINDOW_SECONDS} * INTERVAL '1 second')
+        THEN CURRENT_TIMESTAMP
+        ELSE "api_rate_limit_buckets"."window_started_at"
+      END,
+      "expires_at" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${LOGIN_WINDOW_SECONDS} * INTERVAL '1 second')
+        THEN CURRENT_TIMESTAMP + (${LOGIN_WINDOW_SECONDS} * INTERVAL '1 second')
+        ELSE "api_rate_limit_buckets"."expires_at"
+      END
+    RETURNING "request_count", "window_started_at"
+  `;
+
+  const row = rows[0];
+  if (!row) throw new Error("Rate limit storage did not return a counter");
+  return getRateLimitDecision(
+    Number(row.request_count),
+    LOGIN_MAX_ATTEMPTS,
+    row.window_started_at,
+    LOGIN_WINDOW_SECONDS
+  );
+}
+
+export function getClientAddress(request: Request): string | null {
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const firstForwardedAddress = forwardedFor?.split(",")[0]?.trim();
+  if (firstForwardedAddress) return firstForwardedAddress;
+
+  return process.env.NODE_ENV === "production" ? null : "127.0.0.1";
+}
