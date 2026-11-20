@@ -49,4 +49,7 @@ CREATE POLICY "cloud_accounts_tenant_or_worker_policy" ON "cloud_accounts"
     "organization_id" = current_setting('app.current_org_id', true)
     OR current_setting('app.is_sync_worker', true) = 'true'
   )
-  WITH CHECK (\n    "organization_id" = current_setting('app.current_org_id', true)\n    OR current_setting('app.is_sync_worker', true) = 'true'\n  );
+  WITH CHECK (
+    "organization_id" = current_setting('app.current_org_id', true)
+    OR current_setting('app.is_sync_worker', true) = 'true'
+  );
