@@ -4,7 +4,7 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, live provider API authorization, and provider billing API adapters remain outstanding. A durable PostgreSQL-backed sync queue, scheduled account polling, retry handling, and a graceful-shutdown worker are implemented. Provider-native AWS CUR, Azure Cost Management, and GCP detailed billing CSV exports can now be normalized and imported through the workspace. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, external secret-manager references, manual sync queueing, and sync schedules without accepting raw credentials. The sync worker currently records provider jobs as BLOCKED until a live read-only provider connector and secret-manager resolver are deployed.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, provider credential rotation/verification, and production hardening remain outstanding. Read-only AWS Cost Explorer, Azure Cost Management, and GCP BigQuery billing adapters are implemented behind an external secret-resolver contract. A durable PostgreSQL-backed sync queue, scheduled account polling, retry handling, and a graceful-shutdown worker are implemented. Provider-native AWS CUR, Azure Cost Management, and GCP detailed billing CSV exports can now be normalized and imported through the workspace. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, external secret-manager references, manual sync queueing, and sync schedules without accepting raw credentials. The sync worker resolves per-account credentials from an external secret resolver, fetches the previous 30 complete UTC days, and sends normalized costs through the shared idempotent import pipeline. Jobs remain BLOCKED until the worker's secret resolver and account-specific secret reference are configured.
 
 ## Implemented foundation
 
@@ -41,7 +41,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - **Data:** PostgreSQL and Prisma ORM
 - **Security:** Auth.js JWT sessions, password hashing, server-side organization RBAC, and PostgreSQL Row-Level Security
 - **Quality:** ESLint, TypeScript checks, GitHub Actions
-- **Future:** live provider billing API adapters, allocation dimensions, notification delivery, forecasting confidence ranges, Vitest, Playwright, Docker, and deployment automation
+- **Future:** provider credential rotation/verification, allocation dimensions, notification delivery, forecasting confidence ranges, Vitest, Playwright, Docker, and deployment automation
 
 ## Database model
 
@@ -68,7 +68,7 @@ Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
 Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
 ```
 
-The authenticated workspace provides normalized CSV upload and provider-native export import. Choose the provider-native option for AWS CUR, Azure Cost Management exports, or GCP detailed billing exports. Cloud account inventory is managed separately under each organization. This is file-based ingestion, not a live provider API connection. Secret references are pointers only—provider credentials are not stored or fetched by this release. Sync schedules can enqueue jobs at 15-minute to 7-day intervals; queued jobs are safely marked BLOCKED until the relevant provider connector is implemented.
+The authenticated workspace provides normalized CSV upload and provider-native export import. Choose the provider-native option for AWS CUR, Azure Cost Management exports, or GCP detailed billing exports. Cloud account inventory is managed separately under each organization. Provider-native CSV ingestion remains available. Live API sync is also supported through AWS Cost Explorer, Azure Cost Management, and GCP BigQuery billing export. Credentials are never stored in FinSight; the worker resolves the account's credentialRef through the configured external secret resolver. Sync jobs query the previous 30 complete UTC days and import results through the same validated, deduplicating pipeline.
 
 ## Local development
 
@@ -134,4 +134,31 @@ GRANT SELECT, UPDATE ON TABLE cloud_accounts TO finsight_sync_worker;
 GRANT SELECT, INSERT, UPDATE ON TABLE cloud_sync_jobs TO finsight_sync_worker;
 ```
 
-Set `SYNC_WORKER_DATABASE_URL` on the worker service only, run `npm run sync:worker`, and keep the normal web-service `DATABASE_URL` on the restricted tenant-scoped runtime role. Do not use a superuser for either runtime. The worker drains a PostgreSQL queue with row locks and recovers stale leases; it marks jobs `BLOCKED` until the provider connector is installed. It does not retrieve credentials or contact cloud APIs yet.
+Set `SYNC_WORKER_DATABASE_URL` on the worker service only, run `npm run sync:worker`, and keep the normal web-service `DATABASE_URL` on the restricted tenant-scoped runtime role. Do not use a superuser for either runtime. The worker drains a PostgreSQL queue with row locks, recovers stale leases, resolves secrets, calls read-only provider billing APIs, and imports normalized results. Keep SYNC_WORKER_DATABASE_URL, SECRET_RESOLVER_URL, and SECRET_RESOLVER_TOKEN only in the worker environment. Do not set the worker database URL or secret-resolver token on the public web service.
+
+
+### Live cloud billing API connectors
+
+The worker supports AWS Cost Explorer, Azure Cost Management, and GCP BigQuery billing exports. It reads the previous 30 complete UTC days and imports daily service-level charges through the canonical CSV validator and deduplication pipeline. The worker uses the account's credentialRef as an opaque pointer; secret material is returned only in memory and is never written to application tables or logs.
+
+Configure these variables on the background worker only:
+
+- SYNC_WORKER_DATABASE_URL: dedicated non-superuser sync-worker database role, with the queue/account permissions documented above.
+- SECRET_RESOLVER_URL: HTTPS endpoint accepting the resolver contract below.
+- SECRET_RESOLVER_TOKEN: bearer token for the resolver. Do not expose it to the web service or browser.
+
+The worker sends POST SECRET_RESOLVER_URL with Authorization: Bearer <token> and JSON:
+
+```json
+{ "reference": "vault://finops/organization/cloud-account", "provider": "AWS", "organizationId": "org-id", "cloudAccountId": "account-id" }
+```
+
+The resolver must enforce that the reference belongs to the supplied organization and account, and return { secret: { ... } }. Use a dedicated service identity, strict reference allow-lists, audit access, TLS, and short-lived tokens. The endpoint must not log request secrets or response bodies.
+
+Provider secret payloads:
+
+- AWS: { roleArn: arn:aws:iam::123456789012:role/FinSightCostReader, externalId: ... }. The role must belong to the registered 12-digit account, trust the worker's AWS identity, and grant only ce:GetCostAndUsage for Cost Explorer. The worker assumes this role with a temporary session.
+- Azure: { tenantId, clientId, clientSecret }. Grant the service principal Cost Management Reader at the registered subscription scope.
+- GCP: { serviceAccountJson: { type: external_account, ... }, billingExportTable: project-id.dataset.gcp_billing_export_v1_... }. Use service-account or Workload Identity Federation credentials, grant BigQuery Job User on the query project and BigQuery Data Viewer on the billing export dataset, and ensure the table project matches the registered cloud account project ID.
+
+New imports are system-originated and deliberately have no fabricated human uploader; the audit event records the provider sync with a null human actor. AWS/Azure/GCP permissions should be read-only. Validate the resolver and provider roles in a non-production organization before enabling schedules.
