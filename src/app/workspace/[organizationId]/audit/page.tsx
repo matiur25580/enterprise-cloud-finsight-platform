@@ -23,7 +23,10 @@ function describeAction(action: string): string {
     BUDGET_DELETED: "Budget deleted",
     BUDGET_THRESHOLD_ALERT_SENT: "Budget threshold alert recorded",
     BUDGET_THRESHOLD_ALERT_RETRY_REQUESTED: "Budget threshold alert retry requested",
-    BUDGET_FORECAST_SNAPSHOT_CAPTURED: "Budget forecast snapshot captured"
+    BUDGET_FORECAST_SNAPSHOT_CAPTURED: "Budget forecast snapshot captured",
+    SHARED_COST_ALLOCATION_RULE_CREATED: "Shared cost allocation rule created",
+    SHARED_COST_ALLOCATION_RULE_STATUS_CHANGED: "Shared cost allocation rule status changed",
+    SHARED_COST_ALLOCATION_APPLIED: "Shared cost allocation applied"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
 }
