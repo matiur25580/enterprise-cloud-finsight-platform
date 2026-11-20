@@ -33,23 +33,6 @@ CREATE INDEX "cloud_accounts_sync_due_idx" ON "cloud_accounts"("sync_enabled", "
 
 ALTER TABLE "cloud_sync_jobs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "cloud_sync_jobs" FORCE ROW LEVEL SECURITY;
-CREATE POLICY "cloud_sync_jobs_tenant_or_worker_policy" ON "cloud_sync_jobs"
-  USING (
-    "organization_id" = current_setting('app.current_org_id', true)
-    OR current_setting('app.is_sync_worker', true) = 'true'
-  )
-  WITH CHECK (
-    "organization_id" = current_setting('app.current_org_id', true)
-    OR current_setting('app.is_sync_worker', true) = 'true'
-  );
-
-DROP POLICY IF EXISTS "cloud_accounts_tenant_policy" ON "cloud_accounts";
-CREATE POLICY "cloud_accounts_tenant_or_worker_policy" ON "cloud_accounts"
-  USING (
-    "organization_id" = current_setting('app.current_org_id', true)
-    OR current_setting('app.is_sync_worker', true) = 'true'
-  )
-  WITH CHECK (
-    "organization_id" = current_setting('app.current_org_id', true)
-    OR current_setting('app.is_sync_worker', true) = 'true'
-  );
+CREATE POLICY "cloud_sync_jobs_tenant_policy" ON "cloud_sync_jobs"
+  USING ("organization_id" = current_setting('app.current_org_id', true))
+  WITH CHECK ("organization_id" = current_setting('app.current_org_id', true));
