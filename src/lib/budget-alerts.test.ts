@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { deliverBudgetThresholdAlert } from "@/lib/cloud-sync/notifications";
+import { deliverBudgetThresholdAlert } from "./cloud-sync/notifications";
 
 const alert = {
   budgetName: "Production",
@@ -47,7 +47,7 @@ test("budget alert skips untrusted webhook and invalid email recipients", async 
 });
 
 test("budget alert reports provider failures without throwing", async () => {
-  const result = await deliverBudgetThresholdAlert(alert, async () => new Response("nope", { status: 503), {
+  const result = await deliverBudgetThresholdAlert(alert, async () => new Response("nope", { status: 503 }), {
     SLACK_SYNC_ALERT_WEBHOOK_URL: "https://hooks.slack.com/services/T000/B000/test"
   });
   assert.deepEqual(result, { attempted: 1, delivered: 0 });
