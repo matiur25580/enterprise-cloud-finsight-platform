@@ -23,6 +23,6 @@ export default async function BudgetsPage({ params }: { params: Promise<{ organi
   });
   return <main className="budget-page">
     <header className="budget-header"><div><Link href={"/workspace/" + organizationId}>← Cost intelligence</Link><p className="analytics-eyebrow">FINANCIAL GOVERNANCE</p><h1>Budget management</h1><p className="analytics-subtitle">Create spending limits and monitor actual costs in each billing currency.</p></div><span>{access.membership.role.replaceAll("_", " ")}</span></header>
-    <BudgetManager organizationId={organizationId} initialBudgets={budgets} canManage={hasPermission(access.membership.role, "budgets:manage")} />
+    <div className="budget-page-links"><Link href={"/workspace/" + organizationId + "/budgets/alerts"}>Alert history →</Link></div>\n    <BudgetManager organizationId={organizationId} initialBudgets={budgets} canManage={hasPermission(access.membership.role, "budgets:manage")} />
   </main>;
 }
