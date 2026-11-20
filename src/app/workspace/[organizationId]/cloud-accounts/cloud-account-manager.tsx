@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-type SyncJob = { status: string; trigger: string; attemptCount: number; totalRows: number; importedRows: number; rejectedRows: number; duplicateRows: number; errorMessage: string | null; createdAt: string };
+type SyncJob = { id: string; status: string; trigger: string; attemptCount: number; totalRows: number; importedRows: number; rejectedRows: number; duplicateRows: number; errorMessage: string | null; createdAt: string };
 type Account = {
   id: string; provider: string; externalAccountId: string; name: string; currency: string; status: string;
   credentialReferenceConfigured: boolean; lastSyncedAt: string | null; lastSyncAttemptAt: string | null;
@@ -43,6 +43,17 @@ export default function CloudAccountManager({ organizationId, initialAccounts, c
     finally { setBusy(null); }
   }
 
+  async function retryJob(account: Account, job: SyncJob) {
+    setBusy(account.id); setMessage("");
+    try {
+      const response = await fetch("/api/organizations/" + organizationId + "/cloud-accounts/" + account.id + "/sync/" + job.id + "/retry", { method: "POST" });
+      const result = await response.json(); if (!response.ok) throw new Error(result.error ?? "Unable to retry sync.");
+      setMessage("Failed sync job re-queued. The worker will process it using the configured retry policy.");
+      window.location.reload();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Retry request failed."); }
+    finally { setBusy(null); }
+  }
+
   async function syncNow(account: Account) {
     setBusy(account.id); setMessage("");
     try {
@@ -72,7 +83,10 @@ export default function CloudAccountManager({ organizationId, initialAccounts, c
       <div className="analytics-panel-heading"><h2>Cloud account inventory</h2><p>{accounts.length} registered account(s) · sync history is tenant-scoped</p></div>
       {accounts.length ? accounts.map((account) => <article className="cloud-account-row" key={account.id}>
         <div className="cloud-account-main"><div className="cloud-provider-mark">{account.provider}</div><div><strong>{account.name}</strong><span>{account.externalAccountId} · {account.currency}</span><small>{account.credentialReferenceConfigured ? "Secret manager reference configured" : "No secret reference configured"}</small></div></div>
-        <div className="cloud-account-state"><span className={"cloud-status " + account.status.toLowerCase()}>{account.status}</span>{account.lastSyncedAt ? <small>Last successful sync: {new Date(account.lastSyncedAt).toLocaleString()}</small> : <small>No successful sync recorded</small>}{account.syncJobs.length ? <div className="cloud-job-history">{account.syncJobs.map((job, index) => <small key={job.createdAt + "-" + index}>{job.status} · {job.trigger.toLowerCase()} · attempt {job.attemptCount} · {job.importedRows}/{job.totalRows} imported · {job.rejectedRows} rejected · {job.duplicateRows} duplicate · {new Date(job.createdAt).toLocaleString()}{job.errorMessage ? " — " + job.errorMessage : ""}</small>)}</div> : <small>No sync jobs yet</small>}</div>
+        <div className="cloud-account-state"><span className={"cloud-status " + account.status.toLowerCase()}>{account.status}</span>{account.lastSyncedAt ? <small>Last successful sync: {new Date(account.lastSyncedAt).toLocaleString()}</small> : <small>No successful sync recorded</small>}{account.syncJobs.length ? <div className="cloud-job-history">{account.syncJobs.map((job, index) => <div className="cloud-job-entry" key={job.id}>
+            <small>{job.status} · {job.trigger.toLowerCase()} · attempt {job.attemptCount} · {job.importedRows}/{job.totalRows} imported · {job.rejectedRows} rejected · {job.duplicateRows} duplicate · {new Date(job.createdAt).toLocaleString()}{job.errorMessage ? " — " + job.errorMessage : ""}</small>
+            {canWrite && (job.status === "FAILED" || job.status === "BLOCKED") ? <button type="button" disabled={busy !== null || account.status !== "ACTIVE"} onClick={() => retryJob(account, job)}>Retry job</button> : null}
+          </div>)}</div> : <small>No sync jobs yet</small>}</div>
         {canWrite ? <div className="cloud-account-actions">
           <input aria-label={"Secret manager reference for " + account.name} value={credentialRefs[account.id] ?? ""} onChange={(event) => setCredentialRefs((current) => ({ ...current, [account.id]: event.target.value }))} placeholder="vault://kv/finops/org/cloud-account" maxLength={500} />
           <button type="button" disabled={busy !== null} onClick={() => updateAccount(account.id, { credentialRef: credentialRefs[account.id] ?? "" })}>Save secret reference</button>
