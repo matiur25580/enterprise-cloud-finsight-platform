@@ -1,17 +1,29 @@
+import "server-only";
 import { CloudSyncJobStatus, CloudSyncTrigger, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
 
 export async function enqueueCloudSync(input: { organizationId: string; cloudAccountId: string; trigger?: CloudSyncTrigger }) {
-  return withOrganization(prisma, input.organizationId, async (tx) => {
-    const account = await tx.cloudAccount.findFirst({ where: { id: input.cloudAccountId, organizationId: input.organizationId }, select: { id: true, status: true } });
-    if (!account) throw new Error("Cloud account not found in this organization.");
-    if (account.status !== "ACTIVE") throw new Error("Only ACTIVE cloud accounts can be synchronized.");
-    const existing = await tx.cloudSyncJob.findFirst({ where: { organizationId: input.organizationId, cloudAccountId: input.cloudAccountId, status: { in: [CloudSyncJobStatus.QUEUED, CloudSyncJobStatus.RUNNING] } }, orderBy: { createdAt: "desc" } });
-    if (existing) return { job: existing, alreadyQueued: true };
-    const job = await tx.cloudSyncJob.create({ data: { organizationId: input.organizationId, cloudAccountId: input.cloudAccountId, trigger: input.trigger ?? CloudSyncTrigger.MANUAL } });
-    return { job, alreadyQueued: false };
-  });
+  try {
+    return await withOrganization(prisma, input.organizationId, async (tx) => {
+      const account = await tx.cloudAccount.findFirst({ where: { id: input.cloudAccountId, organizationId: input.organizationId }, select: { id: true, status: true } });
+      if (!account) throw new Error("Cloud account not found in this organization.");
+      if (account.status !== "ACTIVE") throw new Error("Only ACTIVE cloud accounts can be synchronized.");
+      const existing = await tx.cloudSyncJob.findFirst({ where: { organizationId: input.organizationId, cloudAccountId: input.cloudAccountId, status: { in: [CloudSyncJobStatus.QUEUED, CloudSyncJobStatus.RUNNING] } }, orderBy: { createdAt: "desc" } });
+      if (existing) return { job: existing, alreadyQueued: true };
+      const job = await tx.cloudSyncJob.create({ data: { organizationId: input.organizationId, cloudAccountId: input.cloudAccountId, trigger: input.trigger ?? CloudSyncTrigger.MANUAL } });
+      return { job, alreadyQueued: false };
+    });
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      const existing = await withOrganization(prisma, input.organizationId, (tx) => tx.cloudSyncJob.findFirst({
+        where: { organizationId: input.organizationId, cloudAccountId: input.cloudAccountId, status: { in: [CloudSyncJobStatus.QUEUED, CloudSyncJobStatus.RUNNING] } },
+        orderBy: { createdAt: "desc" }
+      }));
+      if (existing) return { job: existing, alreadyQueued: true };
+    }
+    throw error;
+  }
 }
 
 export async function listCloudSyncJobs(organizationId: string, cloudAccountId: string, take = 20) {
@@ -41,14 +53,11 @@ export async function enqueueDueScheduledSyncs(limit = 50): Promise<number> {
     `);
     let queued = 0;
     for (const account of due) {
-      const pending = await tx.cloudSyncJob.findFirst({
-        where: { organizationId: account.organization_id, cloudAccountId: account.id, status: { in: [CloudSyncJobStatus.QUEUED, CloudSyncJobStatus.RUNNING] } },
-        select: { id: true }
+      const result = await tx.cloudSyncJob.createMany({
+        data: [{ organizationId: account.organization_id, cloudAccountId: account.id, trigger: CloudSyncTrigger.SCHEDULED }],
+        skipDuplicates: true
       });
-      if (!pending) {
-        await tx.cloudSyncJob.create({ data: { organizationId: account.organization_id, cloudAccountId: account.id, trigger: CloudSyncTrigger.SCHEDULED } });
-        queued += 1;
-      }
+      queued += result.count;
     }
     return queued;
   });
