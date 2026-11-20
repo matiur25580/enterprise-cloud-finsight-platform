@@ -250,3 +250,20 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
   .analytics-footer { flex-direction: column; }
   .analytics-section-title { align-items: flex-start; flex-direction: column; gap: 5px; }
 }
+
+
+/* Authenticated billing import */
+.billing-upload-form { display: grid; gap: 14px; max-width: 620px; }
+.billing-upload-form label { display: grid; gap: 7px; color: #55576b; font-size: 11px; font-weight: 650; }
+.billing-upload-form select, .billing-upload-form input { min-height: 42px; padding: 9px 11px; border: 1px solid #e2e2eb; border-radius: 7px; color: #44465a; background: #fff; font: inherit; font-size: 11px; }
+.billing-upload-form button { width: fit-content; padding: 11px 16px; border: 0; border-radius: 7px; color: white; background: #7163d9; font: inherit; font-size: 11px; font-weight: 700; }
+.billing-upload-form button:disabled { opacity: .55; cursor: wait; }
+.upload-panel, .upload-history { margin-bottom: 15px; }
+.upload-format { display: grid; gap: 7px; margin-top: 20px; padding: 13px; border-radius: 8px; background: #f8f7fd; color: #77798b; font-size: 10px; }
+.upload-format strong { color: #4b4d60; }
+.upload-format code { color: #5f53bb; overflow-wrap: anywhere; }
+.upload-format a { color: #7063d1; font-weight: 700; }
+.upload-message { color: #55576b; font-size: 11px; }
+.upload-history .analytics-list-row { align-items: flex-start; }
+.upload-history .analytics-list-row div { display: grid; gap: 5px; }
+.upload-history .analytics-list-row small { color: #9294a4; font-size: 9px; }
