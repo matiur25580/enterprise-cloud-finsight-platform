@@ -19,6 +19,7 @@ testCase("TOTP verifies RFC 6238 SHA-1 six-digit test vector", () => {
   assert.equal(getMatchingTotpTimeStep("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287082", 59_000), 1);
   assert.equal(getMatchingTotpTimeStep("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "123456", 59_000), null);
   assert.equal(getMatchingTotpTimeStep("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287082", 89_000), 1);
+  assert.equal(getMatchingTotpTimeStep("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287082", 119_000), null);
 });
 
 testCase("TOTP secrets are random and AES-GCM encrypted at rest", () => {
