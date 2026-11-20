@@ -181,3 +181,8 @@ The sync worker can read provider credentials directly from HashiCorp Vault KV v
 Store each account's provider secret in KV v2 and set its FinSight credential reference to `vault://<mount>/<path>`, for example `vault://kv/finops/org-123/aws-prod`. The secret's KV v2 `data.data` object must contain the provider payload documented above. Vault references are resolved only by the background worker; the token is never sent to the browser or stored in PostgreSQL. The resolver rejects path traversal, non-HTTPS Vault endpoints (except local development), redirects, malformed KV v2 responses, and oversized responses. Vault 5xx/429/network errors are retryable; missing or denied secrets block the job until configuration is corrected.
 
 Use a dedicated Vault policy scoped to exact secret paths, short-lived tokens or workload identity where available, TLS, rotation, and Vault audit devices. Never grant the worker broad list/write/delete access. If you prefer an independently hosted resolver, leave `SECRET_MANAGER_BACKEND` unset and configure `SECRET_RESOLVER_URL` plus `SECRET_RESOLVER_TOKEN`; the existing organization/account-aware resolver contract remains supported.
+
+
+### Cloud sync health dashboard
+
+Organization members with `cloud:read` permission can open `/workspace/<organizationId>/cloud-accounts/health` to inspect tenant-scoped sync job totals (queued, running, succeeded, failed, blocked), account schedule and secret-reference readiness, and the latest 50 sync outcomes. The page intentionally displays stable error codes rather than raw provider error messages, which may contain sensitive response details. Counts are derived from persisted job records and do not imply that an external provider or worker is currently reachable.
