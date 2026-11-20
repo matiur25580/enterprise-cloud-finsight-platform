@@ -25,7 +25,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 | Area | Planned capability |
 |---|---|
 | Cost intelligence | Tenant-scoped spend trends, service breakdowns, period comparisons, provider allocation, and budget utilization |
-| Data ingestion | Validated CSV imports and cloud billing integrations |
+| Data ingestion | Validated CSV imports, provider-native export normalization, and read-only AWS/Azure/GCP billing API adapters |
 | Allocation | Team, project, environment, and tag-based cost allocation |
 | Anomaly detection | 14-day service baseline, minimum sample guard, 2x/3σ spike rule, and explainable alerts |
 | Forecasting | Historical trend forecasts with confidence ranges |
@@ -103,7 +103,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 6 foundation — AWS/Azure/GCP account inventory, lifecycle management, audit events, and secret-manager reference metadata.
 - [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
 - [x] Phase 8 foundation — AWS CUR, Azure Cost Management, and GCP detailed billing CSV normalization adapters with a shared validated import path.
-- [x] Phase 9 foundation — PostgreSQL-backed manual/scheduled sync queue, tenant-scoped job history, worker claim/retry logic, and graceful shutdown. Live provider API connectors remain planned.
+- [x] Phase 9 foundation — PostgreSQL-backed manual/scheduled sync queue, tenant-scoped job history, worker claim/retry logic, and graceful shutdown.\n- [x] Phase 10 foundation — Read-only AWS Cost Explorer (STS AssumeRole), Azure Cost Management, and GCP BigQuery billing-export API adapters with external secret resolution and canonical idempotent ingestion. Production secret resolver deployment, provider IAM setup, credential rotation, and live end-to-end verification remain operator tasks.
 
 ## Security
 
