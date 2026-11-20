@@ -6,6 +6,7 @@ import { withOrganization } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
 import { getCostIntelligence } from "@/lib/cost-intelligence";
 import { Prisma } from "@prisma/client";
+import { consumeApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,15 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   if (!membership || !hasPermission(membership.role, "recommendations:review")) {
     return NextResponse.json({ error: "Recommendation management permission required." }, { status: 403 });
   }
+  const rateLimit = await consumeApiRateLimit({
+    organizationId,
+    userId: session.user.id,
+    bucket: "recommendations:generate",
+    limit: 5,
+    windowSeconds: 3600
+  });
+  const limitedResponse = rateLimitResponse(rateLimit);
+  if (limitedResponse) return limitedResponse;
 
   const intelligence = await getCostIntelligence(organizationId);
   const candidates: Candidate[] = [
