@@ -74,6 +74,7 @@ model Organization {
   businessMetrics  BusinessMetric[]
   revenueRecords   RevenueRecord[]
   tagPolicies      TagPolicy[]
+  apiSecurityEvents ApiSecurityEvent[]
   @@map("organizations")
 }
 
@@ -435,4 +436,19 @@ model ApiRateLimitBucket {
 
   @@index([expiresAt])
   @@map("api_rate_limit_buckets")
+}
+
+
+model ApiSecurityEvent {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  routeBucket    String       @map("route_bucket") @db.VarChar(100)
+  requestCount   Int          @map("request_count")
+  requestLimit   Int          @map("request_limit")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, routeBucket, createdAt(sort: Desc)])
+  @@map("api_security_events")
 }
