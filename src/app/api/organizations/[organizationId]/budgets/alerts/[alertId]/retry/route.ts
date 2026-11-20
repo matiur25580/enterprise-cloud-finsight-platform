@@ -52,7 +52,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
         metadata: { alertEventId: event.id, thresholdPercent: alert.thresholdPercent }
       } });
       const previousResults = metadata.channelResults && typeof metadata.channelResults === "object" && !Array.isArray(metadata.channelResults) ? metadata.channelResults as Record<string, unknown> : {};
-      const skipChannels = Object.entries(previousResults).filter(([, result]) => result === "DELIVERED").map(([channel]) => channel);\n      return { id: event.id, budgetId: event.entityId, alert, metadata, skipChannels };
+      const skipChannels = Object.entries(previousResults).filter(([, result]) => result === "DELIVERED").map(([channel]) => channel);
+      return { id: event.id, budgetId: event.entityId, alert, metadata, skipChannels };
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "";
