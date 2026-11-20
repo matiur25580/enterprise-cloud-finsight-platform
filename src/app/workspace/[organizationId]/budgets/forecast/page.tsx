@@ -3,6 +3,7 @@ import { requireOrganizationPermission } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
 import { calculateBudgetForecast } from "@/lib/budget-forecast";
+import CaptureForecastButton from "./capture-button";
 
 function money(value: number, currency: string) {
   try { return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(value); }
@@ -45,7 +46,7 @@ export default async function BudgetForecastPage({ params }: { params: Promise<{
   const overPlan = active.filter((item) => item.forecast.pace === "OVER_PLAN").length;
   const projectedOver = active.filter((item) => item.forecast.forecastVariance > 0).length;
   return <main className="budget-page">
-    <header className="budget-header"><div><Link href={"/workspace/" + organizationId + "/budgets"}>← Budget management</Link><p className="analytics-eyebrow">FINANCIAL PLANNING</p><h1>Forecast vs actual</h1><p className="analytics-subtitle">Compare actual cloud spend with the planned budget pace and a transparent period-end run-rate estimate.</p></div></header>
+    <header className="budget-header"><div><Link href={"/workspace/" + organizationId + "/budgets"}>← Budget management</Link><p><Link href={"/workspace/" + organizationId + "/budgets/forecast/accuracy"}>Forecast accuracy history →</Link></p><p className="analytics-eyebrow">FINANCIAL PLANNING</p><h1>Forecast vs actual</h1><p className="analytics-subtitle">Compare actual cloud spend with the planned budget pace and a transparent period-end run-rate estimate.</p></div></header>
     <section className="analytics-grid budget-forecast-summary">
       <article className="analytics-stat"><span>Budgets tracked</span><strong>{budgets.length}</strong><small>All workspace budgets</small></article>
       <article className="analytics-stat"><span>Above planned pace</span><strong>{overPlan}</strong><small>Active, in-window budgets</small></article>
@@ -67,6 +68,7 @@ export default async function BudgetForecastPage({ params }: { params: Promise<{
           </div>
           <div className="budget-forecast-track"><i style={{ width: Math.min(100, Math.max(0, f.forecastUtilizationPercent)).toFixed(2) + "%" }} /></div>
           <div className="budget-forecast-bottom"><span>Actual vs plan: <b>{f.varianceToPlan >= 0 ? "+" : ""}{money(f.varianceToPlan, item.currency)}</b></span><span>Forecast variance: <b>{f.forecastVariance >= 0 ? "+" : ""}{money(f.forecastVariance, item.currency)}</b></span><span>{f.daysElapsed}/{f.totalDays} days elapsed · {f.daysRemaining} remaining</span></div>
+          {!item.isFuture && !item.isExpired && item.isActive ? <CaptureForecastButton organizationId={organizationId} budgetId={item.id} /> : null}
         </article>;
       })}</div> : <div className="budget-empty"><h3>No budgets to forecast</h3><p>Create a budget to compare actual spending with the expected pace.</p></div>}
     </section>
