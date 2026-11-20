@@ -33,8 +33,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ orga
       tx.budget.findMany({ where: { organizationId, isActive: true, startsAt: { lte: end }, endsAt: { gte: end } }, orderBy: { name: "asc" } }),
       tx.organization.findUnique({ where: { id: organizationId }, select: { name: true } })
     ]);
-    const spentByCurrency = new Map<string, number>();
-    for (const row of costs) spentByCurrency.set(row.currency, (spentByCurrency.get(row.currency) ?? 0) + Number(row._sum.amount ?? 0));
     const rows: unknown[][] = [["record_type","organization","period_start","period_end","name","currency","amount","record_count","notes"]];
     for (const row of costs) rows.push(["CLOUD_SERVICE_SPEND",organization?.name,start.toISOString().slice(0,10),end.toISOString().slice(0,10),row.service,row.currency,Number(row._sum.amount ?? 0),row._count._all,"Imported billing actual"]);
     for (const row of revenue) rows.push(["REPORTED_REVENUE",organization?.name,start.toISOString().slice(0,10),end.toISOString().slice(0,10),"All reported revenue",row.currency,Number(row._sum.amount ?? 0),row._count._all,"Manually reported; not inferred"]);
