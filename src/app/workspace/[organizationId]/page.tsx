@@ -54,7 +54,7 @@ export default async function OrganizationDashboard({
     <main className="analytics-shell">
       <header className="analytics-topbar">
         <Link className="analytics-brand" href="/workspace">fin<span>sight</span></Link>
-        <div className="analytics-user">{access.user.name ?? access.user.email} · {access.membership.role.replaceAll("_", " ")}</div>
+        <div className="analytics-user"><Link className="analytics-back" href="/account/security">Account security</Link> · {access.user.name ?? access.user.email} · {access.membership.role.replaceAll("_", " ")}</div>
       </header>
       <div className="analytics-content">
         <div className="analytics-heading">
