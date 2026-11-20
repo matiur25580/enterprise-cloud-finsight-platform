@@ -13,6 +13,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - PostgreSQL schema for organizations, users, memberships, cloud accounts, cost records, budgets, audit logs, and recommendations.
 - Organization-scoped PostgreSQL Row-Level Security policies and a transaction helper for tenant context.
 - CSV billing parser with strict validation, row-level error capture, stable fingerprints, duplicate-safe inserts, and import audit history.
+- Auth.js credentials authentication, bcrypt password hashing, organization bootstrap, JWT sessions, and server-side RBAC guards.
 - GitHub Actions workflow for linting, TypeScript checks, and builds.
 
 ## Planned capabilities
@@ -34,7 +35,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - **Application:** Next.js App Router, React, TypeScript
 - **UI:** Tailwind CSS and Lucide icons
 - **Data:** PostgreSQL and Prisma ORM
-- **Security:** Organization-scoped database policies; application authorization remains to be implemented
+- **Security:** Auth.js JWT sessions, password hashing, server-side organization RBAC, and PostgreSQL Row-Level Security
 - **Quality:** ESLint, TypeScript checks, GitHub Actions
 - **Future:** Auth.js, background jobs, provider billing ingestion, analytics, Vitest, Playwright, Docker, and deployment automation
 
@@ -62,7 +63,7 @@ Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
 Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
 ```
 
-The import service is a server-only domain operation. An authenticated upload route/UI is intentionally deferred until session authentication is implemented; do not accept organization or actor IDs directly from browser input.
+The import service is a server-only domain operation. An authenticated upload route/UI is still pending; do not accept organization or actor IDs directly from browser input.
 
 ## Local development
 
@@ -94,7 +95,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [ ] Phase 4 — Cost aggregation, allocation, dashboard queries, and reporting.
 - [ ] Phase 5 — Anomaly detection, forecasting, and evidence-backed recommendations.
 - [ ] Phase 6 — Secure cloud provider integrations.
-- [ ] Phase 7 — Authentication completion, tests, observability, Docker, CI/CD, and production hardening.
+- [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
 
 ## Security
 
