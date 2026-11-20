@@ -1,7 +1,8 @@
 import { CloudSyncJobStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
-import { executeProviderBillingSync, ProviderConnectorUnavailableError } from "./provider-adapters";
+import { importBillingCsv } from "@/lib/billing/import-service";
+import { executeProviderBillingSync, ProviderCredentialConfigurationError } from "./provider-adapters";
 
 type ClaimedJob = { id: string; organization_id: string; cloud_account_id: string; attempt_count: number; max_attempts: number };
 
@@ -33,17 +34,41 @@ export async function claimNextCloudSyncJob(): Promise<ClaimedJob | null> {
 }
 
 export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
+  const attemptedAt = new Date();
   try {
     const account = await withOrganization(prisma, job.organization_id, (tx) => tx.cloudAccount.findFirst({
       where: { id: job.cloud_account_id, organizationId: job.organization_id },
-      select: { provider: true, externalAccountId: true, status: true }
+      select: { provider: true, externalAccountId: true, status: true, credentialRef: true, currency: true }
     }));
     if (!account || account.status !== "ACTIVE") throw new Error("Cloud account is no longer active.");
-    await executeProviderBillingSync(account.provider, account.externalAccountId);
+    const result = await executeProviderBillingSync({
+      provider: account.provider, externalAccountId: account.externalAccountId,
+      organizationId: job.organization_id, cloudAccountId: job.cloud_account_id,
+      credentialRef: account.credentialRef
+    });
+    const imported = await importBillingCsv({
+      organizationId: job.organization_id, cloudAccountId: job.cloud_account_id,
+      fileName: account.provider.toLowerCase() + "-live-sync-" + attemptedAt.toISOString().replace(/[:.]/g, "-") + ".csv",
+      csvText: result.csv
+    });
+    const completelyRejected = imported.totalRows > 0 && imported.importedRows === 0 && imported.duplicateRows === 0;
+    await withOrganization(prisma, job.organization_id, async (tx) => {
+      await tx.cloudSyncJob.update({
+        where: { id: job.id },
+        data: {
+          status: completelyRejected ? CloudSyncJobStatus.FAILED : CloudSyncJobStatus.SUCCEEDED,
+          completedAt: new Date(),
+          errorCode: imported.rejectedRows > 0 ? "BILLING_ROWS_REJECTED" : null,
+          errorMessage: imported.rejectedRows > 0 ? imported.rejectedRows + " billing row(s) were rejected by the canonical import validator." : null,
+          totalRows: imported.totalRows, importedRows: imported.importedRows,
+          rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows
+        }
+      });
+      await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncedAt: completelyRejected ? undefined : new Date(), lastSyncAttemptAt: new Date() } });
+    });
   } catch (error) {
-    const blocked = error instanceof ProviderConnectorUnavailableError;
+    const blocked = error instanceof ProviderCredentialConfigurationError;
     const message = error instanceof Error ? error.message : "Cloud billing synchronization failed.";
-    const errorCode = blocked ? "PROVIDER_CONNECTOR_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED";
     const retry = !blocked && job.attempt_count < job.max_attempts;
     await withOrganization(prisma, job.organization_id, async (tx) => {
       await tx.cloudSyncJob.update({
@@ -52,16 +77,11 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
           status: blocked ? CloudSyncJobStatus.BLOCKED : retry ? CloudSyncJobStatus.QUEUED : CloudSyncJobStatus.FAILED,
           availableAt: retry ? new Date(Date.now() + Math.min(60, 2 ** job.attempt_count) * 60_000) : undefined,
           completedAt: retry ? null : new Date(),
-          errorCode,
+          errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED",
           errorMessage: message.slice(0, 1000)
         }
       });
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncAttemptAt: new Date() } });
     });
-    return;
   }
-  await withOrganization(prisma, job.organization_id, async (tx) => {
-    await tx.cloudSyncJob.update({ where: { id: job.id }, data: { status: CloudSyncJobStatus.SUCCEEDED, completedAt: new Date(), errorCode: null, errorMessage: null } });
-    await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncedAt: new Date(), lastSyncAttemptAt: new Date() } });
-  });
 }
