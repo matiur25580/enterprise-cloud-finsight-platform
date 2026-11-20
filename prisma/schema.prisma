@@ -75,6 +75,7 @@ model Organization {
   revenueRecords   RevenueRecord[]
   tagPolicies      TagPolicy[]
   apiSecurityEvents ApiSecurityEvent[]
+  securityIncidents SecurityIncident[]
   @@map("organizations")
 }
 
@@ -451,4 +452,25 @@ model ApiSecurityEvent {
   @@index([organizationId, createdAt(sort: Desc)])
   @@index([organizationId, routeBucket, createdAt(sort: Desc)])
   @@map("api_security_events")
+}
+
+model SecurityIncident {
+  id                String       @id @default(cuid())
+  organizationId    String       @map("organization_id")
+  sourceEventId     String?      @map("source_event_id")
+  title             String       @db.VarChar(180)
+  description       String       @db.VarChar(2000)
+  severity          String       @default("MEDIUM") @db.VarChar(16)
+  status            String       @default("OPEN") @db.VarChar(20)
+  createdByUserId   String       @map("created_by_user_id")
+  updatedByUserId   String       @map("updated_by_user_id")
+  acknowledgedAt    DateTime?    @map("acknowledged_at") @db.Timestamptz(6)
+  resolvedAt        DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, sourceEventId])
+  @@index([organizationId, status, severity, createdAt(sort: Desc)])
+  @@map("security_incidents")
 }
