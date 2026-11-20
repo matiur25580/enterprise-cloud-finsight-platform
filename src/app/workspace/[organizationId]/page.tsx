@@ -69,7 +69,7 @@ export default async function OrganizationDashboard({
               <Link className="analytics-back" href={"/workspace/" + organizationId + "/budgets"}>Budgets</Link>
               <Link className="analytics-back" href={"/workspace/" + organizationId + "/billing"}>Billing imports</Link>
               <Link className="analytics-back" href={"/workspace/" + organizationId + "/cloud-accounts"}>Cloud accounts</Link>
-              <Link className="analytics-back" href={"/workspace/" + organizationId + "/members"}>Members</Link>
+              {hasPermission(access.membership.role, "members:manage") ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/members"}>Members</Link> : null}
               {hasPermission(access.membership.role, "organization:manage") ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/settings"}>Settings</Link> : null}
             </div>
             <div className="analytics-nav-group">
