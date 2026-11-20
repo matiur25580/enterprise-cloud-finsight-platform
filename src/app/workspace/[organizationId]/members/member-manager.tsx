@@ -72,7 +72,7 @@ export default function MemberManager({ organizationId, initialMembers, initialI
       <div className="analytics-panel-heading"><h2>Organization members</h2><p>{members.length} active member(s)</p></div>
       <div className="member-list">{members.map((member) => <article className="member-row" key={member.id}>
         <div><strong>{member.user.name || member.user.email}</strong><span>{member.user.email}</span></div>
-        {member.role === "OWNER" ? <span className="member-role">Owner</span> : <div className="member-actions">
+        {member.role === "OWNER" ? <span className="member-role">Owner</span> : actorRole === "ADMIN" && member.role === "ADMIN" ? <span className="member-role">Admin · owner-managed</span> : <div className="member-actions">
           <select aria-label={"Role for " + member.user.email} defaultValue={member.role} onChange={(event) => changeRole(member.id, event.target.value)}><option value="ADMIN" disabled={actorRole !== "OWNER"}>Admin</option><option value="FINOPS_ANALYST">FinOps Analyst</option><option value="VIEWER">Viewer</option></select>
           <button type="button" className="member-remove" onClick={() => remove(member)}>Remove</button>
         </div>}
