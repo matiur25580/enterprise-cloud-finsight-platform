@@ -349,3 +349,10 @@ Apply all pending migrations before deploying:
 npm run db:deploy
 npm run db:generate
 ```
+
+
+### Enterprise security activity dashboard
+
+Organization Owners and Admins can open `/workspace/{organizationId}/security` to review tenant-scoped API rate-limit threshold crossings over the trailing 30 days. The dashboard summarizes the latest 100 recorded events, route buckets, a 14-day UTC activity trend, and an incident-signal timeline. Access is restricted server-side to OWNER and ADMIN memberships; event queries run inside the organization tenant context and the event table enforces PostgreSQL RLS.
+
+This is an abuse-signal dashboard, not a threat-intelligence verdict: a rate-limit threshold crossing does not prove malicious activity or account compromise. The current event stream covers authenticated high-cost API routes and does not yet include tenant-attributed credential-login telemetry, provider threat feeds, IP reputation, or automated incident response. Raw client IP addresses and credentials are not exposed. No new migration is introduced by this dashboard; apply the pending security migrations before deployment.
