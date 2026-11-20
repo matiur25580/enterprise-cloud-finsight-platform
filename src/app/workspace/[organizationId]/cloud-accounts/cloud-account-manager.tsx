@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
 
-type LatestJob = { status: string; errorMessage: string | null; createdAt: string } | null;
+type SyncJob = { status: string; trigger: string; attemptCount: number; errorMessage: string | null; createdAt: string };
 type Account = {
   id: string; provider: string; externalAccountId: string; name: string; currency: string; status: string;
   credentialReferenceConfigured: boolean; lastSyncedAt: string | null; lastSyncAttemptAt: string | null;
-  syncEnabled: boolean; syncIntervalMinutes: number; nextSyncAt: string | null; latestSyncJob: LatestJob;
+  syncEnabled: boolean; syncIntervalMinutes: number; nextSyncAt: string | null; syncJobs: SyncJob[];
 };
 const providers = [{ value: "AWS", label: "Amazon Web Services" }, { value: "AZURE", label: "Microsoft Azure" }, { value: "GCP", label: "Google Cloud" }];
 const intervals = [{ value: 15, label: "Every 15 minutes" }, { value: 60, label: "Hourly" }, { value: 360, label: "Every 6 hours" }, { value: 1440, label: "Daily" }, { value: 10080, label: "Weekly" }];
@@ -70,7 +70,7 @@ export default function CloudAccountManager({ organizationId, initialAccounts, c
       <div className="analytics-panel-heading"><h2>Cloud account inventory</h2><p>{accounts.length} registered account(s) · sync history is tenant-scoped</p></div>
       {accounts.length ? accounts.map((account) => <article className="cloud-account-row" key={account.id}>
         <div className="cloud-account-main"><div className="cloud-provider-mark">{account.provider}</div><div><strong>{account.name}</strong><span>{account.externalAccountId} · {account.currency}</span><small>{account.credentialReferenceConfigured ? "Secret manager reference configured" : "No secret reference configured"}</small></div></div>
-        <div className="cloud-account-state"><span className={"cloud-status " + account.status.toLowerCase()}>{account.status}</span>{account.lastSyncedAt ? <small>Last successful sync: {new Date(account.lastSyncedAt).toLocaleString()}</small> : <small>No successful sync recorded</small>}{account.latestSyncJob ? <small>Latest job: {account.latestSyncJob.status} · {new Date(account.latestSyncJob.createdAt).toLocaleString()}</small> : <small>No sync jobs yet</small>}{account.latestSyncJob?.errorMessage ? <small>{account.latestSyncJob.errorMessage}</small> : null}</div>
+        <div className="cloud-account-state"><span className={"cloud-status " + account.status.toLowerCase()}>{account.status}</span>{account.lastSyncedAt ? <small>Last successful sync: {new Date(account.lastSyncedAt).toLocaleString()}</small> : <small>No successful sync recorded</small>}{account.syncJobs.length ? <div className="cloud-job-history">{account.syncJobs.map((job, index) => <small key={job.createdAt + "-" + index}>{job.status} · {job.trigger.toLowerCase()} · attempt {job.attemptCount} · {new Date(job.createdAt).toLocaleString()}{job.errorMessage ? " — " + job.errorMessage : ""}</small>)}</div> : <small>No sync jobs yet</small>}</div>
         {canWrite ? <div className="cloud-account-actions">
           <button type="button" disabled={busy !== null || account.status !== "ACTIVE"} onClick={() => syncNow(account)}>Sync now</button>
           <select aria-label={"Sync schedule for " + account.name} value={account.syncEnabled ? String(account.syncIntervalMinutes) : "off"} disabled={busy !== null || account.status !== "ACTIVE"} onChange={(event) => { const value = event.target.value; updateAccount(account.id, { syncEnabled: value !== "off", syncIntervalMinutes: value === "off" ? account.syncIntervalMinutes : Number(value) }); }}>
