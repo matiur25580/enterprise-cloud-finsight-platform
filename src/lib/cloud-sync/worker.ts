@@ -115,7 +115,7 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
     });
     if (completelyRejected) {
       await notifyTerminalOutcome(job, "FAILED", { errorCode: "BILLING_ROWS_REJECTED", importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows });
-    } else if (previousJob && [CloudSyncJobStatus.FAILED, CloudSyncJobStatus.BLOCKED].includes(previousJob.status)) {
+    } else if (previousJob && (previousJob.status === CloudSyncJobStatus.FAILED || previousJob.status === CloudSyncJobStatus.BLOCKED)) {
       await notifyTerminalOutcome(job, "RECOVERED", { importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows });
     }
   } catch (error) {
