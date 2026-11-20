@@ -26,6 +26,19 @@ enum CloudAccountStatus {
   ERROR
   @@map("cloud_account_status")
 }
+enum CloudSyncJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  BLOCKED
+  @@map("cloud_sync_job_status")
+}
+enum CloudSyncTrigger {
+  MANUAL
+  SCHEDULED
+  @@map("cloud_sync_trigger")
+}
 enum BudgetPeriod {
   MONTHLY
   QUARTERLY
@@ -53,6 +66,7 @@ model Organization {
   auditLogs       AuditLog[]
   recommendations Recommendation[]
   importBatches    ImportBatch[]
+  cloudSyncJobs    CloudSyncJob[]
   @@map("organizations")
 }
 
@@ -96,11 +110,15 @@ model CloudAccount {
   lastSyncedAt      DateTime?          @map("last_synced_at") @db.Timestamptz(6)
   lastSyncAttemptAt DateTime?          @map("last_sync_attempt_at") @db.Timestamptz(6)
   credentialRef     String?            @map("credential_ref") @db.VarChar(500)
+  syncEnabled       Boolean            @default(false) @map("sync_enabled")
+  syncIntervalMinutes Int              @default(1440) @map("sync_interval_minutes")
+  nextSyncAt        DateTime?          @map("next_sync_at") @db.Timestamptz(6)
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   costRecords       CostRecord[]
   importBatches     ImportBatch[]
+  syncJobs          CloudSyncJob[]
   @@unique([organizationId, id])
   @@unique([organizationId, provider, externalAccountId])
   @@index([organizationId, provider, status])
@@ -231,4 +249,27 @@ model Recommendation {
   organization            Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   @@index([organizationId, status, createdAt])
   @@map("recommendations")
+}
+
+
+model CloudSyncJob {
+  id               String             @id @default(cuid())
+  organizationId   String             @map("organization_id")
+  cloudAccountId   String             @map("cloud_account_id")
+  status           CloudSyncJobStatus @default(QUEUED)
+  trigger          CloudSyncTrigger   @default(MANUAL)
+  attemptCount     Int                @default(0) @map("attempt_count")
+  maxAttempts      Int                @default(3) @map("max_attempts")
+  availableAt      DateTime           @default(now()) @map("available_at") @db.Timestamptz(6)
+  startedAt        DateTime?          @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime?          @map("completed_at") @db.Timestamptz(6)
+  errorCode        String?            @map("error_code") @db.VarChar(100)
+  errorMessage     String?            @map("error_message") @db.VarChar(1000)
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cloudAccount     CloudAccount       @relation(fields: [organizationId, cloudAccountId], references: [organizationId, id], onDelete: Cascade)
+  @@index([status, availableAt, createdAt])
+  @@index([organizationId, cloudAccountId, createdAt(sort: Desc)])
+  @@map("cloud_sync_jobs")
 }
