@@ -2,7 +2,8 @@ import { CloudSyncJobStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
 import { importBillingCsv } from "@/lib/billing/import-service";
-import { executeProviderBillingSync, ProviderCredentialConfigurationError } from "./provider-adapters";
+import { executeProviderBillingSync } from "./provider-adapters";
+import { ProviderCredentialConfigurationError } from "./errors";
 
 type ClaimedJob = { id: string; organization_id: string; cloud_account_id: string; attempt_count: number; max_attempts: number };
 
