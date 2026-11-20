@@ -24,30 +24,35 @@ export default async function RevenueEfficiencyPage({ params }: { params: Promis
       tx.revenueRecord.findMany({ where: { organizationId, revenueDate: { gte: start, lte: end } }, orderBy: [{ revenueDate: "desc" }, { createdAt: "desc" }], take: 100 })
     ]);
     const totals = new Map<string, { revenue: number; spend: number; revenueRecords: number; costRecords: number }>();
-    const monthly = new Map<string, { month: string; currency: string; revenue: number; spend: number }>();
+    const monthly = new Map<string, { month: string; currency: string; revenue: number; spend: number; revenueReported: boolean; costReported: boolean }>();
+    const monthlyMetrics = new Map<string, { month: string; metricName: string; unit: string; value: number }>();
     for (const row of revenueRows) {
       const currency = row.currency; const value = Number(row._sum.amount ?? 0);
       const total = totals.get(currency) ?? { revenue: 0, spend: 0, revenueRecords: 0, costRecords: 0 };
       total.revenue += value; total.revenueRecords += 1; totals.set(currency, total);
       const month = row.revenueDate.toISOString().slice(0, 7); const key = month + ":" + currency;
-      const item = monthly.get(key) ?? { month, currency, revenue: 0, spend: 0 }; item.revenue += value; monthly.set(key, item);
+      const item = monthly.get(key) ?? { month, currency, revenue: 0, spend: 0, revenueReported: false, costReported: false }; item.revenue += value; item.revenueReported = true; monthly.set(key, item);
     }
     for (const row of costRows) {
       const currency = row.currency; const value = Number(row._sum.amount ?? 0);
       const total = totals.get(currency) ?? { revenue: 0, spend: 0, revenueRecords: 0, costRecords: 0 };
       total.spend += value; total.costRecords += 1; totals.set(currency, total);
       const month = row.usageDate.toISOString().slice(0, 7); const key = month + ":" + currency;
-      const item = monthly.get(key) ?? { month, currency, revenue: 0, spend: 0 }; item.spend += value; monthly.set(key, item);
+      const item = monthly.get(key) ?? { month, currency, revenue: 0, spend: 0, revenueReported: false, costReported: false }; item.spend += value; item.costReported = true; monthly.set(key, item);
     }
     const metricTotals = new Map<string, { metricName: string; unit: string; value: number; observations: number }>();
     for (const row of metricRows) {
       const key = row.metricName + ":" + row.unit;
       const item = metricTotals.get(key) ?? { metricName: row.metricName, unit: row.unit, value: 0, observations: 0 };
       item.value += Number(row._sum.value ?? 0); item.observations += row._count._all; metricTotals.set(key, item);
+      const month = row.metricDate.toISOString().slice(0, 7); const monthlyKey = month + ":" + key;
+      const monthItem = monthlyMetrics.get(monthlyKey) ?? { month, metricName: row.metricName, unit: row.unit, value: 0 };
+      monthItem.value += Number(row._sum.value ?? 0); monthlyMetrics.set(monthlyKey, monthItem);
     }
     return {
       totals: [...totals.entries()].map(([currency, value]) => ({ currency, ...value })),
       monthly: [...monthly.values()].sort((a, b) => a.month.localeCompare(b.month) || a.currency.localeCompare(b.currency)),
+      efficiencyTrend: [...monthly.values()].flatMap((spend) => [...monthlyMetrics.values()].filter((metric) => metric.month === spend.month && spend.costReported && metric.value > 0).map((metric) => ({ month: spend.month, currency: spend.currency, metricName: metric.metricName, unit: metric.unit, volume: metric.value, costPerUnit: spend.spend / metric.value }))),
       metricTotals: [...metricTotals.values()],
       records: records.map((record) => ({ id: record.id, amount: Number(record.amount), currency: record.currency, revenueDate: record.revenueDate.toISOString().slice(0, 10), source: record.source, notes: record.notes }))
     };
@@ -66,12 +71,16 @@ export default async function RevenueEfficiencyPage({ params }: { params: Promis
       </section>
       <section className="analytics-grid">
         <article className="analytics-panel"><div className="analytics-panel-heading"><div><h2>Monthly revenue vs cloud spend</h2><p>Actuals grouped by calendar month and currency</p></div></div>
-          {data.monthly.length ? <div className="budget-alert-table-wrap"><table className="budget-alert-table"><thead><tr><th>Month</th><th>Currency</th><th>Revenue</th><th>Cloud spend</th><th>Contribution</th></tr></thead><tbody>{data.monthly.map((row) => <tr key={row.month+row.currency}><td>{row.month}</td><td>{row.currency}</td><td>{money(row.revenue,row.currency)}</td><td>{money(row.spend,row.currency)}</td><td>{money(calculateFinancialPerformance(row.revenue,row.spend).cloudContribution,row.currency)}</td></tr>)}</tbody></table></div> : <p className="analytics-muted">Monthly comparison will appear when source data is available.</p>}
+          {data.monthly.length ? <div className="budget-alert-table-wrap"><table className="budget-alert-table"><thead><tr><th>Month</th><th>Currency</th><th>Revenue</th><th>Cloud spend</th><th>Contribution</th></tr></thead><tbody>{data.monthly.map((row) => <tr key={row.month+row.currency}><td>{row.month}</td><td>{row.currency}</td><td>{money(row.revenue,row.currency)}</td><td>{money(row.spend,row.currency)}</td><td>{row.revenueReported ? money(calculateFinancialPerformance(row.revenue,row.spend).cloudContribution,row.currency) : "Revenue not reported"}</td></tr>)}</tbody></table></div> : <p className="analytics-muted">Monthly comparison will appear when source data is available.</p>}
         </article>
         <article className="analytics-panel"><div className="analytics-panel-heading"><div><h2>Cost efficiency indicators</h2><p>Cloud spend divided by reported business volume</p></div></div>
           {data.metricTotals.length && data.totals.length ? data.totals.map((spend) => data.metricTotals.map((metric) => <div className="analytics-list-row" key={spend.currency+metric.metricName+metric.unit}><div><strong>{spend.currency} / {metric.metricName}</strong><span>{metric.value.toLocaleString("en-US",{maximumFractionDigits:4})} {metric.unit} reported</span></div><strong>{metric.value>0?money(spend.spend/metric.value,spend.currency):"—"}</strong></div>)) : <p className="analytics-muted">Add verified business volume observations in Unit economics to calculate cost per unit.</p>}
           <Link className="analytics-back" href={"/workspace/"+organizationId+"/business-metrics"}>Manage business metrics</Link>
         </article>
+      </section>
+      <section className="analytics-panel">
+        <div className="analytics-panel-heading"><div><h2>Monthly cost efficiency trend</h2><p>Imported cloud spend divided by reported business volume for the same month</p></div></div>
+        {data.efficiencyTrend.length ? <div className="budget-alert-table-wrap"><table className="budget-alert-table"><thead><tr><th>Month</th><th>Currency</th><th>Business metric</th><th>Reported volume</th><th>Cloud cost / unit</th></tr></thead><tbody>{data.efficiencyTrend.map((item) => <tr key={item.month+item.currency+item.metricName+item.unit}><td>{item.month}</td><td>{item.currency}</td><td>{item.metricName}</td><td>{item.volume.toLocaleString("en-US",{maximumFractionDigits:4})} {item.unit}</td><td>{money(item.costPerUnit,item.currency)}</td></tr>)}</tbody></table></div> : <p className="analytics-muted">Monthly cost efficiency trends appear after cloud costs and dated business metrics are available in the same month.</p>}
       </section>
       <RevenueManager organizationId={organizationId} initialRecords={data.records} canManage={hasPermission(access.membership.role,"billing:import")} />
     </div>
