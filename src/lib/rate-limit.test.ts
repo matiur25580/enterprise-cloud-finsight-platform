@@ -64,8 +64,8 @@ test("rejects weak configured secrets instead of silently using them", () => {
 test("prefers AUTH_SECRET and supports NEXTAUTH_SECRET fallback", () => {
   const authSecret = "a".repeat(32);
   const nextAuthSecret = "b".repeat(32);
-  assert.equal(getRateLimitSecret({ AUTH_SECRET: authSecret, NEXTAUTH_SECRET: nextAuthSecret }), authSecret);
-  assert.equal(getRateLimitSecret({ NEXTAUTH_SECRET: nextAuthSecret }), nextAuthSecret);
+  assert.equal(getRateLimitSecret({ NODE_ENV: "test", AUTH_SECRET: authSecret, NEXTAUTH_SECRET: nextAuthSecret }), authSecret);
+  assert.equal(getRateLimitSecret({ NODE_ENV: "test", NEXTAUTH_SECRET: nextAuthSecret }), nextAuthSecret);
 });
 
 test("uses a development-only fallback when no secret is configured", () => {
