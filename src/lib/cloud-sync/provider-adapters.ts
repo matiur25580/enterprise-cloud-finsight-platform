@@ -64,6 +64,7 @@ export function validateProviderSecret(provider: CloudProvider, externalAccountI
     if (!/^arn:aws:iam::\d{12}:role\/[A-Za-z0-9_+=,.@/-]+$/.test(roleArn) || roleArn.split(":")[4] !== externalAccountId) {
       throw new ProviderCredentialConfigurationError("The AWS role ARN must belong to the registered 12-digit account ID.");
     }
+    requiredString(secret.externalId, "externalId");
     return;
   }
   if (provider === "AZURE") {
@@ -88,8 +89,8 @@ async function syncAws(externalAccountId: string, secret: Secret): Promise<Billi
   if (!/^arn:aws:iam::\d{12}:role\/[A-Za-z0-9_+=,.@/-]+$/.test(roleArn) || roleArn.split(":")[4] !== externalAccountId) {
     throw new ProviderCredentialConfigurationError("The AWS role ARN must belong to the registered 12-digit account ID.");
   }
-  const externalId = typeof secret.externalId === "string" ? secret.externalId : undefined;
-  const credentials = fromTemporaryCredentials({ params: { RoleArn: roleArn, RoleSessionName: "FinSightBillingReadOnly", ...(externalId ? { ExternalId: externalId } : {}) }, clientConfig: { region: "us-east-1" } });
+  const externalId = requiredString(secret.externalId, "externalId");
+  const credentials = fromTemporaryCredentials({ params: { RoleArn: roleArn, RoleSessionName: "FinSightBillingReadOnly", ExternalId: externalId }, clientConfig: { region: "us-east-1" } });
   const client = new CostExplorerClient({ region: "us-east-1", credentials });
   const window = dateWindow();
   const rows: BillingRow[] = [];
