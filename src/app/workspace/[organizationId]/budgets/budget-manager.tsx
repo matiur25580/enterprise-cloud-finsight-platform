@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 type Budget = { id: string; name: string; amount: number; currency: string; period: "MONTHLY" | "QUARTERLY" | "ANNUAL"; startsAt: string; endsAt: string; alertThresholds: number[]; isActive: boolean; spent: number; utilization: number };
 type Draft = Omit<Budget, "id" | "spent" | "utilization">;
@@ -25,7 +25,7 @@ export default function BudgetManager({ organizationId, initialBudgets, canManag
     setError(""); setNotice("");
   }
   function reset() { setEditing(null); setDraft(emptyDraft()); setError(""); }
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
       const response = await fetch(editing ? endpoint + "/" + editing : endpoint, { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) });
