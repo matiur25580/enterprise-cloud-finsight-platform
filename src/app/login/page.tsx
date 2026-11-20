@@ -58,6 +58,7 @@ export default function LoginPage() {
           {error ? <p className="auth-error" role="alert">{error}</p> : null}
           <button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         </form>
+        <p className="auth-switch"><Link href="/forgot-password">Forgot your password?</Link></p>
         <p className="auth-switch">Need to verify your email? <Link href="/verify-email">Resend verification email</Link></p>
         <p className="auth-switch">New to FinSight? <Link href="/register">Create an account</Link></p>
       </section>

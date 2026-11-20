@@ -5,7 +5,6 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createRecoveryCodes, hashRecoveryCode, verifyAndConsumeMfaFactor } from "@/lib/mfa";
 import { readLimitedJson } from "@/lib/request-body";
-import { enforceMfaRateLimit } from "@/lib/mfa-rate-limit";
 
 export const runtime = "nodejs";
 const schema = z.object({
@@ -14,9 +13,6 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const limited = await enforceMfaRateLimit(request);
-  if (limited) return limited;
-
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: "Sign in required." }, { status: 401 });

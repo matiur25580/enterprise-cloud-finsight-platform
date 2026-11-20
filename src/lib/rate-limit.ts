@@ -236,7 +236,7 @@ const REGISTRATION_MAX_ATTEMPTS = 5;
 /** Apply a separate IP-based quota to public account creation. */
 export async function consumeRegistrationRateLimit(
   clientAddress: string,
-  action: "create-account" | "resend-verification" = "create-account"
+  action: "create-account" | "resend-verification" | "forgot-password" | "reset-password" = "create-account"
 ): Promise<RateLimitDecision> {
   const secret = getRateLimitSecret();
   const keyHash = createHmac("sha256", secret)
