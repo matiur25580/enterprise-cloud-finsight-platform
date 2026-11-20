@@ -4,7 +4,7 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Browser CSV upload, email verification, MFA, and production cloud integrations remain outstanding.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, production cloud integrations, and automated provider billing sync remain outstanding. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, and external secret-manager references without accepting raw credentials.
 
 ## Implemented foundation
 
@@ -29,7 +29,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 | Forecasting | Historical trend forecasts with confidence ranges |
 | Optimization | Ranked service review opportunities with transparent, illustrative savings scenarios; actual savings tracking remains planned |
 | Budgets | Budget ownership, thresholds, and notifications |
-| Governance | Authentication, organizations, RBAC, audit events, and approvals |
+| Governance | Authentication, organizations, RBAC, cloud account lifecycle, audit events, and approvals |
 | Reporting | Exportable reports and documented APIs |
 
 ## Technology
@@ -44,7 +44,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 ## Database model
 
 - `Organization`, `User`, and `Membership` support organization membership and role assignments.
-- `CloudAccount` stores AWS, Azure, and Google Cloud account metadata.
+- `CloudAccount` stores AWS, Azure, and Google Cloud account metadata, lifecycle status, optional external secret-manager references, and sync timestamps.
 - `CostRecord` stores normalized daily charges with decimal precision, currency, tags, and deduplication keys.
 - `Budget` stores date-bounded budgets and alert thresholds.
 - `AuditLog` stores attributable, organization-scoped events.
@@ -65,7 +65,7 @@ Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
 Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
 ```
 
-The import service is a server-only domain operation. An authenticated upload route/UI is still pending; do not accept organization or actor IDs directly from browser input.
+The authenticated workspace provides CSV upload and import history. Cloud account inventory is managed separately under each organization; new accounts start paused. Secret references are pointers only—provider credentials are not stored or fetched by this release.
 
 ## Local development
 
@@ -97,7 +97,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 3 foundation — CSV parsing/validation, import history, row issues, idempotent fingerprints, and audit events. Authenticated upload UI/API remains outstanding.
 - [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI and exports remain outstanding.
 - [x] Phase 5 foundation — Historical service-spend anomaly signals, budget threshold alerts, and explainable optimization scenarios. Persistent alert delivery, forecasting confidence ranges, and realized-savings tracking remain planned.
-- [ ] Phase 6 — Secure cloud provider integrations.
+- [x] Phase 6 foundation — AWS/Azure/GCP account inventory, lifecycle management, audit events, and secret-manager reference metadata. Live provider authorization and billing sync remain planned.
 - [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
 
 ## Security
