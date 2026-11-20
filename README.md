@@ -50,7 +50,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - `CloudSyncJob` stores tenant-scoped manual/scheduled sync work, attempt counts, execution timestamps, and blocked/failure details.
 - `CostRecord` stores normalized daily charges with decimal precision, currency, tags, and deduplication keys.
 - `Budget` stores date-bounded budgets and alert thresholds.
-- `AuditLog` stores attributable, organization-scoped events.
+- `AuditLog` stores attributable, organization-scoped events, including cloud sync queue/retry actions and background-worker start, success, failure, and blocked lifecycle events. The organization audit timeline displays the latest 100 cloud governance events without exposing provider error payloads or secrets.
 - `Recommendation` stores evidence-backed optimization opportunities and review status.
 - `ImportBatch` and `ImportIssue` track source files, row outcomes, and validation errors.
 
@@ -197,3 +197,8 @@ At least one delivery channel must be configured. Alerts include the cloud accou
 ### Cloud sync health dashboard
 
 Organization members with `cloud:read` permission can open `/workspace/<organizationId>/cloud-accounts/health` to inspect tenant-scoped sync job totals (queued, running, succeeded, failed, blocked), account schedule and secret-reference readiness, and the latest 50 sync outcomes. The page intentionally displays stable error codes rather than raw provider error messages, which may contain sensitive response details. Counts are derived from persisted job records and do not imply that an external provider or worker is currently reachable.
+
+
+## Operational audit timeline
+
+Organization members with the `audit:read` permission can open `/workspace/{organizationId}/audit` to review the latest 100 cloud-account and sync events. The worker records system-attributed sync start, success, terminal failure, and blocked events; manual queue and retry actions retain the initiating user. Retry actions preserve the existing job record and add a separate audit event. The timeline intentionally omits raw provider error messages and secret material. This is a bounded recent-activity view, not an immutable compliance archive or exportable report.
