@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { withUserContext } from "@/lib/user-context";
 import { withOrganization } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
-import { Prisma, RecommendationStatus, CloudProvider } from "@prisma/client";
+import { Prisma, CloudProvider } from "@prisma/client";
 
 export const runtime = "nodejs";
 const createSchema = z.object({
