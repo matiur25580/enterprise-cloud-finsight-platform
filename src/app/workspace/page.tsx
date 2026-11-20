@@ -20,13 +20,13 @@ export default async function WorkspacePage() {
         <Link className="auth-brand" href="/">fin<span>sight</span></Link>
         <p className="auth-eyebrow">AUTHENTICATED WORKSPACE</p>
         <h1>Welcome, {user.name ?? user.email}</h1>
-        <p className="auth-description">Your session is active. Choose an organization to continue.</p>
+        <p className="auth-description">Choose an organization to view its live cloud cost analytics.</p>
         <div className="workspace-list">
           {memberships.map((membership) => (
-            <article className="workspace-option" key={membership.id}>
+            <Link className="workspace-option workspace-option-link" href={"/workspace/" + membership.organization.id} key={membership.id}>
               <div><strong>{membership.organization.name}</strong><span>{membership.role.replaceAll("_", " ")}</span></div>
-              <span className="workspace-slug">{membership.organization.slug}</span>
-            </article>
+              <span className="workspace-slug">Open analytics →</span>
+            </Link>
           ))}
           {memberships.length === 0 ? <p>No organization membership found.</p> : null}
         </div>
