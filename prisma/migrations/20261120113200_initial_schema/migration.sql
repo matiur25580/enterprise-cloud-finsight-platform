@@ -104,7 +104,10 @@ CREATE POLICY "organizations_tenant_policy" ON "organizations"
 ALTER TABLE "memberships" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "memberships" FORCE ROW LEVEL SECURITY;
 CREATE POLICY "memberships_tenant_policy" ON "memberships"
-  USING ("organization_id" = current_setting('app.current_org_id', true))
+  USING (
+    "organization_id" = current_setting('app.current_org_id', true)
+    OR "user_id" = current_setting('app.current_user_id', true)
+  )
   WITH CHECK ("organization_id" = current_setting('app.current_org_id', true));
 ALTER TABLE "cloud_accounts" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "cloud_accounts" FORCE ROW LEVEL SECURITY;
