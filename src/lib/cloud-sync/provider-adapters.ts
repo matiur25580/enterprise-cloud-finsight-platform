@@ -41,8 +41,8 @@ async function resolveProviderSecret(input: { credentialRef: string | null; prov
     method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
     body: JSON.stringify({ reference: input.credentialRef, provider: input.provider, organizationId: input.organizationId, cloudAccountId: input.cloudAccountId }),
     signal: AbortSignal.timeout(15_000), cache: "no-store"
-  }).catch(() => { throw new ProviderCredentialConfigurationError("The secret resolver could not be reached."); });
-  if (!response.ok) throw new ProviderCredentialConfigurationError(response.status === 404 ? "The configured provider secret reference was not found." : "The secret resolver rejected this provider secret request.");
+  }).catch(() => { throw new ProviderApiError("The secret resolver could not be reached."); });
+  if (!response.ok) {\n    if (response.status >= 500) throw new ProviderApiError("The secret resolver is temporarily unavailable.");\n    throw new ProviderCredentialConfigurationError(response.status === 404 ? "The configured provider secret reference was not found." : "The secret resolver rejected this provider secret request.");\n  }
   let payload: unknown;
   try { payload = await response.json(); } catch { throw new ProviderCredentialConfigurationError("The secret resolver returned an invalid response."); }
   if (!payload || typeof payload !== "object" || !("secret" in payload) || !payload.secret || typeof payload.secret !== "object") throw new ProviderCredentialConfigurationError("The secret resolver response must contain a secret object.");
