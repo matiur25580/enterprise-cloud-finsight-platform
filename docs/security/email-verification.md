@@ -25,3 +25,15 @@ Registration intentionally returns HTTP 503 before creating an account if email 
 - Do not expose Resend credentials in client-side environment variables. Configure them only on the server-side web service.
 
 The email sender must be an address/domain verified by Resend. Delivery depends on the deployment's Resend account, DNS, sender approval, and configured environment variables.
+
+## Multi-factor authentication
+
+Account owners can enable authenticator-based MFA at `/account/security`.
+
+- TOTP secrets are encrypted with AES-256-GCM using a key derived from the server-only `AUTH_SECRET`. Keep this secret stable and rotate it only with a planned encryption-key migration.
+- The authenticator uses standard 6-digit, 30-second TOTP with a one-step clock-skew window.
+- Ten random recovery codes are generated when MFA is enabled. Only SHA-256 hashes are stored, and each code can be used once.
+- Users must re-enter their current password to enroll, confirm, rotate recovery codes, or disable MFA.
+- A login with MFA enabled requires a valid authenticator code or unused recovery code.
+- Recovery codes are displayed once. Users should store them in a password manager or another secure location.
+- MFA migrations add nullable fields and a separate recovery-code table; existing users are not forced to enable MFA.
