@@ -67,6 +67,7 @@ model Organization {
   recommendations Recommendation[]
   importBatches    ImportBatch[]
   cloudSyncJobs    CloudSyncJob[]
+  invitations      OrganizationInvitation[]
   @@map("organizations")
 }
 
@@ -81,6 +82,7 @@ model User {
   memberships   Membership[]
   auditLogs     AuditLog[]
   uploadedImports ImportBatch[]
+  sentInvitations OrganizationInvitation[] @relation("InvitationSender")
   @@map("users")
 }
 
@@ -276,4 +278,22 @@ model CloudSyncJob {
   @@index([status, availableAt, createdAt])
   @@index([organizationId, cloudAccountId, createdAt(sort: Desc)])
   @@map("cloud_sync_jobs")
+}
+
+
+model OrganizationInvitation {
+  id                String         @id @default(cuid())
+  organizationId    String         @map("organization_id")
+  email             String         @db.VarChar(254)
+  role              MembershipRole @default(VIEWER)
+  tokenHash         String         @unique @map("token_hash") @db.VarChar(64)
+  invitedByUserId   String         @map("invited_by_user_id")
+  expiresAt         DateTime       @map("expires_at") @db.Timestamptz(6)
+  acceptedAt        DateTime?      @map("accepted_at") @db.Timestamptz(6)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy         User           @relation("InvitationSender", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([email, expiresAt])
+  @@map("organization_invitations")
 }
