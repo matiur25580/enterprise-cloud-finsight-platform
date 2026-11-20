@@ -21,7 +21,7 @@ function describeAction(action: string): string {
     BUDGET_CREATED: "Budget created",
     BUDGET_UPDATED: "Budget updated",
     BUDGET_DELETED: "Budget deleted",
-    BUDGET_THRESHOLD_ALERT_SENT: "Budget threshold notification triggered"
+    BUDGET_THRESHOLD_ALERT_SENT: "Budget threshold alert recorded"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
 }
