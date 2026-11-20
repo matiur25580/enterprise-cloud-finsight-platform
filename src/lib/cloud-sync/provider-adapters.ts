@@ -145,9 +145,9 @@ async function syncAzure(externalAccountId: string, secret: Secret, defaultCurre
       const indexes = { amount: columns.findIndex((column) => /pretaxcost|cost/i.test(column.name)), date: columns.findIndex((column) => /usagedate|date/i.test(column.name)), service: columns.findIndex((column) => /servicename|service/i.test(column.name)), currency: columns.findIndex((column) => /currency/i.test(column.name)) };
       for (const row of payload.properties?.rows ?? []) {
         const amount = row[indexes.amount]; const date = row[indexes.date]; const service = row[indexes.service]; const currency = row[indexes.currency];
-        if (indexes.amount >= 0 && indexes.date >= 0 && indexes.service >= 0 && typeof amount === "number" && typeof date === "number" && typeof service === "string") {
+        if (indexes.amount >= 0 && indexes.date >= 0 && indexes.service >= 0 && (typeof amount === "number" || typeof amount === "string") && (typeof date === "number" || typeof date === "string") && typeof service === "string") {
           const dateText = String(date);
-          const usageDate = dateText.length === 8 ? dateText.slice(0, 4) + "-" + dateText.slice(4, 6) + "-" + dateText.slice(6, 8) : dateText;
+          const usageDate = dateText.length === 8 ? dateText.slice(0, 4) + "-" + dateText.slice(4, 6) + "-" + dateText.slice(6, 8) : dateText.slice(0, 10);
           rows.push({ service, amount: String(amount), currency: typeof currency === "string" ? currency : defaultCurrency, usageDate });
         }
       }
