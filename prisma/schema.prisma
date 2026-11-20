@@ -425,3 +425,14 @@ model TagPolicy {
   @@index([organizationId, isActive, createdAt])
   @@map("tag_policies")
 }
+
+
+model ApiRateLimitBucket {
+  keyHash         String   @id @map("key_hash") @db.Char(64)
+  windowStartedAt DateTime @map("window_started_at") @db.Timestamptz(6)
+  requestCount    Int      @default(0) @map("request_count")
+  expiresAt       DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("api_rate_limit_buckets")
+}
