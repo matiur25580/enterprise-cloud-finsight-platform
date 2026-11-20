@@ -435,3 +435,22 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
 .budget-alert-retry button { border: 1px solid #dcd8fa; border-radius: 6px; padding: 7px 9px; color: #6658cf; background: #f7f6ff; font-size: 9px; font-weight: 650; cursor: pointer; }
 .budget-alert-retry button:disabled { opacity: .55; cursor: wait; }
 .budget-alert-retry small { color: #85869a; font-size: 9px; white-space: normal; }
+
+
+.budget-forecast-panel { margin-top: 16px; }
+.budget-forecast-list { display: grid; gap: 12px; }
+.budget-forecast-card { padding: 16px; border: 1px solid #ececf2; border-radius: 9px; background: #fff; }
+.budget-forecast-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.budget-forecast-top > div { display: grid; gap: 5px; }
+.budget-forecast-top strong { color: #45475b; font-size: 11px; }
+.budget-forecast-top > div span { color: #9294a4; font-size: 9px; }
+.budget-forecast-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 17px 0 13px; }
+.budget-forecast-metrics > div { display: grid; gap: 5px; min-width: 0; }
+.budget-forecast-metrics small { color: #9294a4; font-size: 9px; }
+.budget-forecast-metrics strong { color: #45475b; font-size: 12px; overflow-wrap: anywhere; }
+.budget-forecast-track { height: 6px; overflow: hidden; border-radius: 6px; background: #f0f0f5; }
+.budget-forecast-track i { display: block; height: 100%; border-radius: inherit; background: #8878ed; }
+.budget-forecast-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 15px; margin-top: 10px; color: #9294a4; font-size: 9px; }
+.budget-forecast-bottom b { color: #55576b; font-weight: 650; }
+.budget-forecast-disclaimer { margin: 13px 2px; color: #9294a4; font-size: 9px; line-height: 1.6; }
+@media (max-width: 700px) { .budget-forecast-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .budget-forecast-top { align-items: flex-start; } }
