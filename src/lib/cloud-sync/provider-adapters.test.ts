@@ -9,8 +9,8 @@ test("rejects an AWS role from a different account", () => {
   assert.throws(() => validateProviderSecret("AWS", "123456789012", { roleArn: "arn:aws:iam::999999999999:role/FinSightCostReader" }), ProviderCredentialConfigurationError);
 });
 test("requires Azure service-principal fields", () => {
-  assert.throws(() => validateProviderSecret("AZURE", "subscription-id", { tenantId: "tenant", clientId: "client" }), ProviderCredentialConfigurationError);
-  assert.doesNotThrow(() => validateProviderSecret("AZURE", "subscription-id", { tenantId: "tenant", clientId: "client", clientSecret: "resolved-secret" }));
+  assert.throws(() => validateProviderSecret("AZURE", "12345678-1234-1234-1234-123456789012", { tenantId: "tenant", clientId: "client" }), ProviderCredentialConfigurationError);
+  assert.doesNotThrow(() => validateProviderSecret("AZURE", "12345678-1234-1234-1234-123456789012", { tenantId: "tenant", clientId: "client", clientSecret: "resolved-secret" }));
 });
 test("accepts only GCP billing tables inside the registered project", () => {
   const secret = { serviceAccountJson: { type: "external_account" }, billingExportTable: "sample-project.billing.gcp_billing_export_v1_123" };
