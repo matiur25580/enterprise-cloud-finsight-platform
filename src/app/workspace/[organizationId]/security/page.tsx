@@ -19,7 +19,8 @@ export default async function SecurityDashboardPage({ params }: { params: Promis
     throw error;
   }
 
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const reportEnd = new Date();
+  const since = new Date(reportEnd.getTime() - 30 * 24 * 60 * 60 * 1000);
   const events = await withOrganization(prisma, organizationId, (tx) =>
     tx.apiSecurityEvent.findMany({
       where: { organizationId, createdAt: { gte: since } },
@@ -28,7 +29,7 @@ export default async function SecurityDashboardPage({ params }: { params: Promis
       select: { id: true, routeBucket: true, requestCount: true, requestLimit: true, createdAt: true }
     })
   );
-  const summary = summarizeSecurityEvents(events);
+  const summary = summarizeSecurityEvents(events, reportEnd);
   const maxDay = Math.max(1, ...summary.days.map((day) => day.count));
   const maxRoute = Math.max(1, ...summary.routes.map((route) => route.count));
 
