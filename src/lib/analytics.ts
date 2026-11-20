@@ -79,7 +79,7 @@ export async function getCostAnalytics(organizationId: string, range: AnalyticsR
     const currentByCurrency = new Map(current.map((row) => [row.currency, amount(row._sum.amount)]));
     const previousByCurrency = new Map(previous.map((row) => [row.currency, amount(row._sum.amount)]));
     const monthByCurrency = new Map(monthRows.map((row) => [row.currency, amount(row._sum.amount)]));
-    const currencies = [...new Set([...currentByCurrency.keys(), ...previousByCurrency.keys(), ...monthByCurrency.keys()])].sort();
+    const currencies = [...new Set([...currentByCurrency.keys(), ...previousByCurrency.keys(), ...monthByCurrency.keys(), ...budgets.map((budget) => budget.currency)])].sort();
 
     const daily = dailyRows.map((row) => ({
       date: dateKey(row.usageDate),
