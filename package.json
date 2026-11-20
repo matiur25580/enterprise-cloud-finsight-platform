@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/billing/csv.test.ts src/lib/billing/provider-adapters.test.ts src/lib/permissions.test.ts src/lib/analytics.test.ts src/lib/cost-intelligence.test.ts src/lib/cloud-accounts/validation.test.ts src/lib/cloud-sync/validation.test.ts src/lib/cloud-sync/provider-adapters.test.ts src/lib/cloud-sync/secret-resolver.test.ts src/lib/cloud-sync/notifications.test.ts src/lib/budget-alerts.test.ts src/lib/budget-forecast.test.ts src/lib/cost-allocation.test.ts src/lib/shared-cost-allocation-math.test.ts src/lib/financial-performance.test.ts src/lib/recommendation-impact.test.ts src/lib/tag-policy-math.test.ts src/lib/rate-limit.test.ts src/lib/security-events.test.ts src/lib/security-incidents.test.ts",
+    "test": "tsx --test src/lib/billing/csv.test.ts src/lib/billing/provider-adapters.test.ts src/lib/permissions.test.ts src/lib/analytics.test.ts src/lib/cost-intelligence.test.ts src/lib/cloud-accounts/validation.test.ts src/lib/cloud-sync/validation.test.ts src/lib/cloud-sync/provider-adapters.test.ts src/lib/cloud-sync/secret-resolver.test.ts src/lib/cloud-sync/notifications.test.ts src/lib/budget-alerts.test.ts src/lib/budget-forecast.test.ts src/lib/cost-allocation.test.ts src/lib/shared-cost-allocation-math.test.ts src/lib/financial-performance.test.ts src/lib/recommendation-impact.test.ts src/lib/tag-policy-math.test.ts src/lib/request-body.test.ts src/lib/rate-limit.test.ts src/lib/security-events.test.ts src/lib/security-incidents.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
