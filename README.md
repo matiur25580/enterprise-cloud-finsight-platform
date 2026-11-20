@@ -202,3 +202,8 @@ Organization members with `cloud:read` permission can open `/workspace/<organiza
 ## Operational audit timeline
 
 Organization members with the `audit:read` permission can open `/workspace/{organizationId}/audit` to review the latest 100 cloud-account and sync events. The worker records system-attributed sync start, success, terminal failure, and blocked events; manual queue and retry actions retain the initiating user. Retry actions preserve the existing job record and add a separate audit event. The timeline intentionally omits raw provider error messages and secret material. This is a bounded recent-activity view, not an immutable compliance archive or exportable report.
+
+
+### Audit CSV export
+
+Users with `audit:read` can export organization-scoped cloud account and sync events from `/api/organizations/{organizationId}/audit/export`. Optional `from` and `to` ISO date-time parameters constrain the range (maximum 366 days); optional `action` performs a case-insensitive action substring filter. Exports are capped at 5,000 rows, marked private/no-store, and CSV cells are escaped against spreadsheet formula injection. This endpoint is an operational export, not a tamper-evident or immutable compliance archive.
