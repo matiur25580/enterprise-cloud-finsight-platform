@@ -50,3 +50,45 @@ jobs:
 
       - name: Build production container image
         run: docker build --tag finsight:ci .
+
+  mfa-postgres-integration:
+    name: MFA PostgreSQL concurrency integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: finsight_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d finsight_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/finsight_ci?schema=public
+      AUTH_SECRET: ci-only-secret-for-build-validation-not-for-deployment
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Apply database migrations
+        run: npm run db:deploy
+
+      - name: Run PostgreSQL-backed MFA concurrency tests
+        run: npm run test:integration
