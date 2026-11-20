@@ -110,7 +110,7 @@ export async function deliverBudgetThresholdAlert(
     `Spend: ${alert.spent.toFixed(2)} ${alert.currency} / ${alert.budgetAmount.toFixed(2)} ${alert.currency}`,
     `Utilization: ${alert.utilizationPercent.toFixed(1)}% (threshold ${alert.thresholdPercent}%)`,
     `Budget window: ${alert.startsAt} to ${alert.endsAt}`
-  ].join("\\n");
+  ].join("\n");
   const tasks: Array<{ channel: string; task: Promise<unknown> }> = [];
   const channelResults: Record<string, "DELIVERED" | "FAILED" | "SKIPPED"> = {};
   const webhook = env.SLACK_SYNC_ALERT_WEBHOOK_URL;
