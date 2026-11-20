@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { withUserContext } from "@/lib/user-context";
 import { withOrganization } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
+import { consumeApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ orga
     where: { organizationId, userId: session.user.id }, select: { role: true }
   }));
   if (!membership || !hasPermission(membership.role, "audit:read")) return NextResponse.json({ error: "Audit read permission required." }, { status: 403 });
+  const rateLimit = await consumeApiRateLimit({
+    organizationId,
+    userId: session.user.id,
+    bucket: "audit:export",
+    limit: 10,
+    windowSeconds: 3600
+  });
+  const limitedResponse = rateLimitResponse(rateLimit);
+  if (limitedResponse) return limitedResponse;
 
   const url = new URL(request.url);
   const fromRaw = url.searchParams.get("from");
