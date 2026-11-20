@@ -73,6 +73,7 @@ model Organization {
   invitations      OrganizationInvitation[]
   businessMetrics  BusinessMetric[]
   revenueRecords   RevenueRecord[]
+  tagPolicies      TagPolicy[]
   @@map("organizations")
 }
 
@@ -406,4 +407,21 @@ model RevenueRecord {
   @@index([organizationId, revenueDate])
   @@index([organizationId, currency, revenueDate])
   @@map("revenue_records")
+}
+
+
+model TagPolicy {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  tagKey         String       @map("tag_key") @db.VarChar(120)
+  displayName    String       @map("display_name") @db.VarChar(100)
+  isRequired     Boolean      @default(true) @map("is_required")
+  allowedValues  String[]     @default([]) @map("allowed_values")
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, tagKey])
+  @@index([organizationId, isActive, createdAt])
+  @@map("tag_policies")
 }
