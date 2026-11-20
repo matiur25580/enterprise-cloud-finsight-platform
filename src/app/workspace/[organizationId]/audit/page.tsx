@@ -35,7 +35,7 @@ export default async function AuditPage({ params }: { params: Promise<{ organiza
   return <main className="analytics-shell">
     <header className="analytics-topbar"><Link className="analytics-brand" href="/workspace">fin<span>sight</span></Link><Link className="analytics-back" href={"/workspace/" + organizationId}>Back to cost dashboard</Link></header>
     <div className="analytics-content">
-      <div className="analytics-heading"><div><p className="analytics-eyebrow">GOVERNANCE & COMPLIANCE</p><h1>Operational audit timeline</h1><p className="analytics-subtitle">Organization-scoped cloud account and sync activity · latest 100 events</p></div><Link className="analytics-back" href={"/workspace/" + organizationId + "/cloud-accounts"}>Cloud accounts</Link></div>
+      <div className="analytics-heading"><div><p className="analytics-eyebrow">GOVERNANCE & COMPLIANCE</p><h1>Operational audit timeline</h1><p className="analytics-subtitle">Organization-scoped cloud account and sync activity · latest 100 events · CSV export supports date and action filters</p></div><div className="audit-page-actions"><a className="analytics-back" href={"/api/organizations/" + organizationId + "/audit/export"}>Export CSV</a><Link className="analytics-back" href={"/workspace/" + organizationId + "/cloud-accounts"}>Cloud accounts</Link></div></div>
       <section className="analytics-grid">
         <article className="analytics-stat"><span>Events shown</span><strong>{events.length}</strong><small>Newest first</small></article>
         <article className="analytics-stat"><span>Sync events</span><strong>{syncEvents.length}</strong><small>Queue, retry and execution</small></article>
