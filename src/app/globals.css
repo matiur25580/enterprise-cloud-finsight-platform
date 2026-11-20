@@ -298,3 +298,26 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
 .cloud-job-history small { line-height: 1.45; overflow-wrap: anywhere; }
 
 .cloud-account-actions input { width: min(100%, 220px); min-width: 160px; padding: 6px 8px; border: 1px solid #e7e6ef; border-radius: 6px; color: #686a7d; background: white; font: inherit; font-size: 8px; }
+
+
+/* Cloud sync operations and health dashboard */
+.sync-health-kpi { min-height: 105px; }
+.sync-health-number { font-size: 27px !important; }
+.sync-health-number.queued { color: #9a7650; }.sync-health-number.running { color: #5c78b8; }.sync-health-number.succeeded { color: #258467; }.sync-health-number.failed, .sync-health-number.blocked { color: #b64b58; }
+.sync-health-alert, .sync-health-ok { display: grid; gap: 6px; margin: 0 0 15px; padding: 14px 16px; border: 1px solid #f0d8dc; border-radius: 9px; background: #fff9fa; color: #8e3e4a; font-size: 10px; line-height: 1.5; }
+.sync-health-ok { border-color: #d8eee4; background: #f7fcf9; color: #347b62; }
+.sync-health-alert strong, .sync-health-ok strong { font-size: 12px; }
+.sync-health-panel { margin-bottom: 15px; }
+.sync-account-health { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr; gap: 12px; padding: 13px 0; border-top: 1px solid #f0f0f4; }
+.sync-account-health > div { display: grid; align-content: start; gap: 5px; min-width: 0; }
+.sync-account-health strong { color: #55576b; font-size: 10px; }
+.sync-account-health span, .sync-account-health small { color: #9294a4; font-size: 9px; overflow-wrap: anywhere; }
+.sync-job-table-wrap { overflow-x: auto; }
+.sync-job-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9px; }
+.sync-job-table th { padding: 10px 9px; color: #9294a4; background: #fafafd; text-align: left; font-weight: 650; }
+.sync-job-table td { padding: 11px 9px; border-top: 1px solid #f0f0f4; color: #686a7d; }
+.sync-job-table td:first-child { display: table-cell; }
+.sync-job-table td strong, .sync-job-table td small { display: block; }
+.sync-job-table td strong { color: #4b4d60; font-size: 9px; }
+.sync-job-table td small { margin-top: 4px; color: #9294a4; font-size: 8px; }
+@media (max-width: 760px) { .sync-account-health { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
