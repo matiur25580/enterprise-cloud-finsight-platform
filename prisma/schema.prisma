@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  FINOPS_ANALYST
+  VIEWER
+  @@map("membership_role")
+}
+enum CloudProvider {
+  AWS
+  AZURE
+  GCP
+  @@map("cloud_provider")
+}
+enum CloudAccountStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+  @@map("cloud_account_status")
+}
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  @@map("budget_period")
+}
+enum RecommendationStatus {
+  NEW
+  ACCEPTED
+  DISMISSED
+  IMPLEMENTED
+  @@map("recommendation_status")
+}
+
+model Organization {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships     Membership[]
+  cloudAccounts   CloudAccount[]
+  costRecords     CostRecord[]
+  budgets         Budget[]
+  auditLogs       AuditLog[]
+  recommendations Recommendation[]
+  @@map("organizations")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  passwordHash  String?      @map("password_hash")
+  emailVerified DateTime?    @map("email_verified") @db.Timestamptz(6)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  @@map("users")
+}
+
+model Membership {
+  id             String         @id @default(cuid())
+  organizationId String         @map("organization_id")
+  userId         String         @map("user_id")
+  role           MembershipRole @default(VIEWER)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId, role])
+  @@map("memberships")
+}
+
+model CloudAccount {
+  id                String             @id @default(cuid())
+  organizationId    String             @map("organization_id")
+  provider          CloudProvider
+  externalAccountId String             @map("external_account_id")
+  name              String
+  status            CloudAccountStatus @default(ACTIVE)
+  currency          String             @default("USD") @db.VarChar(3)
+  lastSyncedAt      DateTime?          @map("last_synced_at") @db.Timestamptz(6)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  costRecords       CostRecord[]
+  @@unique([organizationId, id])
+  @@unique([organizationId, provider, externalAccountId])
+  @@index([organizationId, provider, status])
+  @@map("cloud_accounts")
+}
+
+model CostRecord {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  cloudAccountId String       @map("cloud_account_id")
+  externalId     String?      @map("external_id")
+  service        String
+  region         String?
+  usageType      String?      @map("usage_type")
+  resourceId     String?      @map("resource_id")
+  amount         Decimal      @db.Decimal(20, 8)
+  currency       String       @db.VarChar(3)
+  usageDate      DateTime     @map("usage_date") @db.Date
+  tags           Json         @default("{}")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cloudAccount   CloudAccount @relation(fields: [organizationId, cloudAccountId], references: [organizationId, id], onDelete: Cascade)
+  @@unique([cloudAccountId, externalId])
+  @@index([organizationId, usageDate])
+  @@index([organizationId, service, usageDate])
+  @@index([cloudAccountId, usageDate])
+  @@map("cost_records")
+}
+
+model Budget {
+  id              String       @id @default(cuid())
+  organizationId  String       @map("organization_id")
+  name            String
+  amount          Decimal      @db.Decimal(20, 8)
+  currency        String       @default("USD") @db.VarChar(3)
+  period          BudgetPeriod @default(MONTHLY)
+  startsAt        DateTime     @map("starts_at") @db.Date
+  endsAt          DateTime     @map("ends_at") @db.Date
+  alertThresholds Int[]        @default([50, 80, 100]) @map("alert_thresholds")
+  isActive        Boolean      @default(true) @map("is_active")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, isActive, startsAt, endsAt])
+  @@map("budgets")
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  actorUserId    String?      @map("actor_user_id")
+  action         String
+  entityType     String       @map("entity_type")
+  entityId       String?      @map("entity_id")
+  metadata       Json?
+  ipAddress      String?      @map("ip_address")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([organizationId, createdAt])
+  @@index([organizationId, entityType, entityId])
+  @@index([actorUserId, createdAt])
+  @@map("audit_logs")
+}
+
+model Recommendation {
+  id                      String               @id @default(cuid())
+  organizationId          String               @map("organization_id")
+  title                   String
+  description             String
+  provider                CloudProvider?
+  estimatedMonthlySavings Decimal              @map("estimated_monthly_savings") @db.Decimal(20, 8)
+  currency                String               @default("USD") @db.VarChar(3)
+  confidence              Int
+  status                  RecommendationStatus @default(NEW)
+  evidence                Json
+  createdAt               DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization            Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, status, createdAt])
+  @@map("recommendations")
+}
