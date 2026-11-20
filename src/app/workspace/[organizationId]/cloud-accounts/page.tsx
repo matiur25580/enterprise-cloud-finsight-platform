@@ -14,7 +14,7 @@ export default async function CloudAccountsPage({ params }: { params: Promise<{ 
       id: true, provider: true, externalAccountId: true, name: true, currency: true, status: true,
       credentialRef: true, lastSyncedAt: true, lastSyncAttemptAt: true, syncEnabled: true,
       syncIntervalMinutes: true, nextSyncAt: true,
-      syncJobs: { take: 5, orderBy: { createdAt: "desc" }, select: { status: true, trigger: true, attemptCount: true, totalRows: true, importedRows: true, rejectedRows: true, duplicateRows: true, errorMessage: true, createdAt: true } }
+      syncJobs: { take: 5, orderBy: { createdAt: "desc" }, select: { id: true, status: true, trigger: true, attemptCount: true, totalRows: true, importedRows: true, rejectedRows: true, duplicateRows: true, errorMessage: true, createdAt: true } }
     }
   }));
   return <main className="analytics-shell">
@@ -27,7 +27,7 @@ export default async function CloudAccountsPage({ params }: { params: Promise<{ 
         currency: account.currency, status: account.status, credentialReferenceConfigured: Boolean(account.credentialRef),
         lastSyncedAt: account.lastSyncedAt?.toISOString() ?? null, lastSyncAttemptAt: account.lastSyncAttemptAt?.toISOString() ?? null,
         syncEnabled: account.syncEnabled, syncIntervalMinutes: account.syncIntervalMinutes, nextSyncAt: account.nextSyncAt?.toISOString() ?? null,
-        syncJobs: account.syncJobs.map((job) => ({ status: job.status, trigger: job.trigger, attemptCount: job.attemptCount, totalRows: job.totalRows, importedRows: job.importedRows, rejectedRows: job.rejectedRows, duplicateRows: job.duplicateRows, errorMessage: job.errorMessage, createdAt: job.createdAt.toISOString() }))
+        syncJobs: account.syncJobs.map((job) => ({ id: job.id, status: job.status, trigger: job.trigger, attemptCount: job.attemptCount, totalRows: job.totalRows, importedRows: job.importedRows, rejectedRows: job.rejectedRows, duplicateRows: job.duplicateRows, errorMessage: job.errorMessage, createdAt: job.createdAt.toISOString() }))
       }))} />
     </div>
   </main>;
