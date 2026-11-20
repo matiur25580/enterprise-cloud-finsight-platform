@@ -1,0 +1,11 @@
+import Link from "next/link";
+import { requireOrganizationPermission } from "@/lib/auth-guards";
+import { withOrganization } from "@/lib/tenant-context";
+import { prisma } from "@/lib/prisma";
+import { hasPermission } from "@/lib/permissions";
+import CloudAccountManager from "./cloud-account-manager";
+export default async function CloudAccountsPage({params}:{params:Promise<{organizationId:string}>}){
+ const {organizationId}=await params; const access=await requireOrganizationPermission(organizationId,"organization:read");
+ const accounts=await withOrganization(prisma,organizationId,tx=>tx.cloudAccount.findMany({where:{organizationId},orderBy:[{provider:"asc"},{name:"asc"}],select:{id:true,provider:true,externalAccountId:true,name:true,currency:true,status:true,credentialRef:true,lastSyncedAt:true,lastSyncAttemptAt:true}}));
+ return <main className="analytics-shell"><header className="analytics-topbar"><Link className="analytics-brand" href="/workspace">fin<span>sight</span></Link><Link className="analytics-back" href={"/workspace/"+organizationId}>Back to cost dashboard</Link></header><div className="analytics-content"><div className="analytics-heading"><div><p className="analytics-eyebrow">CLOUD GOVERNANCE</p><h1>Cloud accounts</h1><p className="analytics-subtitle">Manage provider account metadata and lifecycle · {access.membership.role.replaceAll("_"," ")}</p></div><Link className="analytics-back" href={"/workspace/"+organizationId+"/billing"}>Import billing CSV</Link></div><section className="analytics-empty cloud-integration-notice"><h2>Provider API integrations are not active yet</h2><p>This release manages account inventory and lifecycle only. It does not assume cloud access, validate provider credentials, or sync live billing. Use CSV imports until provider-specific, read-only integrations are implemented.</p></section><CloudAccountManager organizationId={organizationId} canWrite={hasPermission(access.membership.role,"cloud:write")} initialAccounts={accounts.map(account=>({id:account.id,provider:account.provider,externalAccountId:account.externalAccountId,name:account.name,currency:account.currency,status:account.status,credentialReferenceConfigured:Boolean(account.credentialRef),lastSyncedAt:account.lastSyncedAt?.toISOString()??null,lastSyncAttemptAt:account.lastSyncAttemptAt?.toISOString()??null}))}/></div></main>;
+}
