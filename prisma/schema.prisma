@@ -65,6 +65,7 @@ model Organization {
   budgets         Budget[]
   auditLogs       AuditLog[]
   recommendations Recommendation[]
+  recommendationImpacts RecommendationImpact[]
   sharedCostAllocationRules SharedCostAllocationRule[]
   sharedCostAllocationRuns SharedCostAllocationRun[]
   importBatches    ImportBatch[]
@@ -254,7 +255,34 @@ model Recommendation {
   updatedAt               DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization            Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   @@index([organizationId, status, createdAt])
+  @@unique([organizationId, id])
+  impacts                 RecommendationImpact[]
   @@map("recommendations")
+}
+
+model RecommendationImpact {
+  id                    String         @id @default(cuid())
+  organizationId        String         @map("organization_id")
+  recommendationId      String         @map("recommendation_id")
+  currency              String         @db.VarChar(3)
+  scope                 String         @db.VarChar(160)
+  baselineStartsAt      DateTime       @map("baseline_starts_at") @db.Date
+  baselineEndsAt        DateTime       @map("baseline_ends_at") @db.Date
+  observedStartsAt      DateTime       @map("observed_starts_at") @db.Date
+  observedEndsAt        DateTime       @map("observed_ends_at") @db.Date
+  periodDays            Int            @map("period_days")
+  baselineSpend         Decimal        @map("baseline_spend") @db.Decimal(20, 8)
+  observedSpend         Decimal        @map("observed_spend") @db.Decimal(20, 8)
+  realizedSavings       Decimal        @map("realized_savings") @db.Decimal(20, 8)
+  baselineRecords       Int            @map("baseline_records")
+  observedRecords       Int            @map("observed_records")
+  recordedByUserId      String         @map("recorded_by_user_id")
+  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  recommendation        Recommendation @relation(fields: [organizationId, recommendationId], references: [organizationId, id], onDelete: Cascade)
+  @@unique([recommendationId, baselineStartsAt, baselineEndsAt, observedStartsAt, observedEndsAt])
+  @@index([organizationId, recommendationId, createdAt(sort: Desc)])
+  @@map("recommendation_impacts")
 }
 
 
