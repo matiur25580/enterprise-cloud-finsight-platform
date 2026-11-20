@@ -29,7 +29,7 @@ function decimalAmount(value: string): string {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) throw new ProviderApiError("A provider returned a non-numeric billing amount.");
   if (Math.abs(numeric) < 0.000000005) return "0";
-  return numeric.toFixed(8).replace(/\\.?0+$/, "");
+  return numeric.toFixed(8).replace(/\.?0+$/, "");
 }
 function rowsToCsv(rows: BillingRow[]) {
   const headers = ["service", "amount", "currency", "usageDate", "region"];
