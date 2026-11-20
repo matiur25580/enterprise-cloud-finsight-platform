@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrganizationPermission } from "@/lib/auth-guards";
+import type { MembershipRole } from "@prisma/client";
 import { getCostAnalytics } from "@/lib/analytics";
 import type { AnalyticsRange } from "@/lib/analytics-math";
 
@@ -33,7 +34,7 @@ export default async function OrganizationDashboard({
 }) {
   const [{ organizationId }, query] = await Promise.all([params, searchParams]);
   const range = ranges.includes(query.range as AnalyticsRange) ? query.range as AnalyticsRange : "30d";
-  let access;
+  let access: { user: { id: string; name?: string | null; email?: string | null }; membership: { id: string; organizationId: string; role: MembershipRole } };
   try {
     access = await requireOrganizationPermission(organizationId, "organization:read");
   } catch (error) {
