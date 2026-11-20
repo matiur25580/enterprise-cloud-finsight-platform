@@ -16,7 +16,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
  try {
   const account = await withOrganization(prisma, organizationId, async (tx) => {
    const existing = await tx.cloudAccount.findFirst({ where: { id: accountId, organizationId }, select: { id: true, status: true, syncEnabled: true, syncIntervalMinutes: true } }); if (!existing) return null;
-   const enabled = parsed.data.syncEnabled ?? existing.syncEnabled;\n   const interval = parsed.data.syncIntervalMinutes ?? existing.syncIntervalMinutes;\n   if (parsed.data.syncEnabled === true && existing.status !== "ACTIVE") throw new Error("Activate the cloud account before enabling scheduled sync.");\n   const data = { ...parsed.data, credentialRef: parsed.data.credentialRef === undefined ? undefined : parsed.data.credentialRef || null, nextSyncAt: parsed.data.syncEnabled !== undefined || parsed.data.syncIntervalMinutes !== undefined ? enabled ? new Date(Date.now() + interval * 60_000) : null : undefined };
+   const enabled = parsed.data.syncEnabled ?? existing.syncEnabled;
+   const interval = parsed.data.syncIntervalMinutes ?? existing.syncIntervalMinutes;
+   if (parsed.data.syncEnabled === true && existing.status !== "ACTIVE") throw new Error("Activate the cloud account before enabling scheduled sync.");
+   const data = { ...parsed.data, credentialRef: parsed.data.credentialRef === undefined ? undefined : parsed.data.credentialRef || null, nextSyncAt: parsed.data.syncEnabled !== undefined || parsed.data.syncIntervalMinutes !== undefined ? enabled ? new Date(Date.now() + interval * 60_000) : null : undefined };
    const updated = await tx.cloudAccount.update({ where: { id: existing.id }, data, select: { id: true, provider: true, externalAccountId: true, name: true, currency: true, status: true, lastSyncedAt: true, lastSyncAttemptAt: true, syncEnabled: true, syncIntervalMinutes: true, nextSyncAt: true } });
    await tx.auditLog.create({ data: { organizationId, actorUserId: session.user.id, action: "CLOUD_ACCOUNT_UPDATED", entityType: "CloudAccount", entityId: updated.id, metadata: { changedFields: Object.keys(parsed.data), previousStatus: existing.status, newStatus: updated.status } } }); return updated;
   }); if (!account) return NextResponse.json({ error: "Cloud account not found." }, { status: 404 }); return NextResponse.json({ account });
