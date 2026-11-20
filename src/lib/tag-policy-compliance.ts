@@ -6,8 +6,9 @@ import { withOrganization } from "@/lib/tenant-context";
 export async function getTagPolicyCompliance(organizationId: string) {
   const since = new Date(); since.setUTCHours(0, 0, 0, 0); since.setUTCDate(since.getUTCDate() - 29);
   return withOrganization(prisma, organizationId, async (tx) => {
-    const policies = await tx.tagPolicy.findMany({ where: { organizationId, isActive: true }, orderBy: { tagKey: "asc" } });
+    const policies = await tx.tagPolicy.findMany({ where: { organizationId }, orderBy: { tagKey: "asc" } });
     const results = await Promise.all(policies.map(async (policy) => {
+      if (!policy.isActive) return { ...policy, results: [] };
       const tagValue = Prisma.sql`NULLIF(BTRIM(tags ->> ${policy.tagKey}), '')`;
       const allowed = policy.allowedValues.length ? Prisma.join(policy.allowedValues.map((value) => value.toLowerCase())) : Prisma.empty;
       const violation = policy.allowedValues.length ? (policy.isRequired
