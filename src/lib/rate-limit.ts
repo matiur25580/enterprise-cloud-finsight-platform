@@ -194,3 +194,22 @@ export async function consumeApiRateLimit(input: {
 
   return decision;
 }
+
+
+export function rateLimitResponse(decision: RateLimitDecision): Response | null {
+  if (decision.allowed) return null;
+  const retryAfter = Math.max(1, Math.ceil((decision.resetAt.getTime() - Date.now()) / 1000));
+  return Response.json(
+    { error: "Rate limit exceeded. Please wait before retrying." },
+    {
+      status: 429,
+      headers: {
+        "Cache-Control": "private, no-store",
+        "Retry-After": String(retryAfter),
+        "X-RateLimit-Limit": String(decision.limit),
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": String(Math.ceil(decision.resetAt.getTime() / 1000))
+      }
+    }
+  );
+}
