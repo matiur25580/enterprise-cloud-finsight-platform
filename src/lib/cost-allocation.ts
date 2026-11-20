@@ -10,7 +10,10 @@ export const ALLOCATION_DIMENSIONS = {
   department: { label: "Department", keys: ["department", "Department", "DEPARTMENT"] },
   project: { label: "Project", keys: ["project", "Project", "PROJECT"] },
   environment: { label: "Environment", keys: ["environment", "Environment", "ENVIRONMENT"] },
-  costCenter: { label: "Cost center", keys: ["costCenter", "cost_center", "CostCenter", "COST_CENTER"] }
+  costCenter: { label: "Cost center", keys: ["costCenter", "cost_center", "CostCenter", "COST_CENTER"] },
+  cluster: { label: "Kubernetes cluster", keys: ["cluster", "Cluster", "CLUSTER", "k8s_cluster", "kubernetes.io/cluster"] },
+  namespace: { label: "Kubernetes namespace", keys: ["namespace", "Namespace", "NAMESPACE", "kubernetes.io/metadata.name"] },
+  workload: { label: "Kubernetes workload", keys: ["workload", "Workload", "WORKLOAD", "app.kubernetes.io/name", "deployment", "statefulset"] }
 } as const;
 
 export type AllocationDimension = keyof typeof ALLOCATION_DIMENSIONS;
