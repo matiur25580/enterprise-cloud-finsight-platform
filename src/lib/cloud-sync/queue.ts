@@ -31,7 +31,7 @@ export async function enqueueDueScheduledSyncs(limit = 50): Promise<number> {
         WHERE sync_enabled = true AND status = 'ACTIVE'
           AND next_sync_at IS NOT NULL AND next_sync_at <= NOW()
         ORDER BY next_sync_at ASC
-        LIMIT \${safeLimit} FOR UPDATE SKIP LOCKED
+        LIMIT ${safeLimit} FOR UPDATE SKIP LOCKED
       )
       UPDATE cloud_accounts AS account
       SET next_sync_at = NOW() + make_interval(mins => account.sync_interval_minutes),
