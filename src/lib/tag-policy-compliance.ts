@@ -9,7 +9,7 @@ export async function getTagPolicyCompliance(organizationId: string) {
     const policies = await tx.tagPolicy.findMany({ where: { organizationId, isActive: true }, orderBy: { tagKey: "asc" } });
     const results = await Promise.all(policies.map(async (policy) => {
       const tagValue = Prisma.sql`NULLIF(BTRIM(tags ->> ${policy.tagKey}), '')`;
-      const allowed = Prisma.join(policy.allowedValues.map((value) => value.toLowerCase()));
+      const allowed = policy.allowedValues.length ? Prisma.join(policy.allowedValues.map((value) => value.toLowerCase())) : Prisma.empty;
       const violation = policy.allowedValues.length ? (policy.isRequired
         ? Prisma.sql`(${tagValue} IS NULL OR LOWER(${tagValue}) NOT IN (${allowed}))`
         : Prisma.sql`(${tagValue} IS NOT NULL AND LOWER(${tagValue}) NOT IN (${allowed}))`)
