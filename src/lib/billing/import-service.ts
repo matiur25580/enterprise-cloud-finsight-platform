@@ -2,6 +2,7 @@ import { ImportStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
 import { parseBillingCsv, type RowIssue } from "@/lib/billing/csv";
+import { evaluateBudgetThresholdAlerts } from "@/lib/budget-alerts";
 
 export type BillingImportResult = {
   importBatchId: string;
@@ -31,7 +32,7 @@ export async function importBillingCsv(input: {
   if (!fileName.toLowerCase().endsWith(".csv")) throw new Error("Only .csv files are accepted.");
 
   const parsed = parseBillingCsv(csvText, organizationId, cloudAccountId);
-  return withOrganization(prisma, organizationId, async (tx) => {
+  const result = await withOrganization(prisma, organizationId, async (tx) => {
     const account = await tx.cloudAccount.findFirst({
       where: { id: cloudAccountId, organizationId }, select: { id: true }
     });
@@ -121,4 +122,6 @@ export async function importBillingCsv(input: {
     });
     return { importBatchId: batch.id, totalRows: parsed.totalRows, importedRows, rejectedRows, duplicateRows, status };
   });
+  await evaluateBudgetThresholdAlerts(organizationId);
+  return result;
 }
