@@ -9,27 +9,25 @@ export function normalizeAllocation(value: string | null | undefined): string {
 
 export function summarizeAllocationRows(rows: AllocationRow[]) {
   const totals = new Map<string, number>();
-  let totalSpend = 0;
-  let taggedSpend = 0;
+  const recordsByCurrency = new Map<string, number>();
   let totalRecords = 0;
   for (const row of rows) {
     const spend = Number(row.spend.toString());
-    const key = row.currency + ":" + normalizeAllocation(row.allocation);
+    const key = JSON.stringify([row.currency, normalizeAllocation(row.allocation)]);
     totals.set(key, (totals.get(key) ?? 0) + spend);
-    totalSpend += spend;
+    recordsByCurrency.set(row.currency, (recordsByCurrency.get(row.currency) ?? 0) + Number(row.records));
     totalRecords += Number(row.records);
-    if (normalizeAllocation(row.allocation) !== "Unallocated") taggedSpend += spend;
   }
-  return {
-    groups: [...totals.entries()].map(([key, spend]) => {
-      const separator = key.indexOf(":");
-      return { currency: key.slice(0, separator), allocation: key.slice(separator + 1), spend };
-    }).sort((a, b) => a.currency.localeCompare(b.currency) || b.spend - a.spend),
-    totalSpend,
-    taggedSpend,
-    unallocatedSpend: totalSpend - taggedSpend,
-    totalRecords,
-    taggedCoveragePercent: totalSpend > 0 ? taggedSpend / totalSpend * 100 : 0
-  };
+  const groups = [...totals.entries()].map(([key, spend]) => {
+    const [currency, allocation] = JSON.parse(key) as [string, string];
+    return { currency, allocation, spend };
+  }).sort((a, b) => a.currency.localeCompare(b.currency) || b.spend - a.spend);
+  const currencies = [...new Set(groups.map((item) => item.currency))];
+  const byCurrency = currencies.map((currency) => {
+    const items = groups.filter((item) => item.currency === currency);
+    const totalSpend = items.reduce((sum, item) => sum + item.spend, 0);
+    const taggedSpend = items.filter((item) => item.allocation !== "Unallocated").reduce((sum, item) => sum + item.spend, 0);
+    return { currency, totalSpend, taggedSpend, unallocatedSpend: totalSpend - taggedSpend, coveragePercent: totalSpend > 0 ? taggedSpend / totalSpend * 100 : 0, records: recordsByCurrency.get(currency) ?? 0 };
+  });
+  return { groups, byCurrency, totalRecords };
 }
-
