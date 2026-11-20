@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, passwordHash: true, mfaEnabledAt: true }
+    select: { email: true, passwordHash: true, mfaEnabledAt: true, mfaSecretEncrypted: true }
   });
   if (!user?.passwordHash || !(await compare(parsed.data.password, user.passwordHash))) {
     return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
@@ -37,10 +37,22 @@ export async function POST(request: Request) {
 
   const secret = createTotpSecret();
   const encrypted = encryptTotpSecret(secret);
-  await prisma.user.update({
-    where: { id: userId },
+  // Compare-and-set prevents concurrent setup requests from invalidating the
+  // secret returned to another request, and prevents writes after MFA is enabled.
+  const setupUpdated = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      mfaEnabledAt: null,
+      mfaSecretEncrypted: user.mfaSecretEncrypted
+    },
     data: { mfaSecretEncrypted: encrypted, mfaLastUsedTimeStep: null }
   });
+  if (setupUpdated.count !== 1) {
+    return NextResponse.json(
+      { error: "MFA setup changed while this request was processing. Please try again." },
+      { status: 409 }
+    );
+  }
 
   return NextResponse.json({
     secret,
