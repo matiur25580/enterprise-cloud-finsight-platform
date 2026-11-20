@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 type Rule = { id: string; name: string; servicePattern: string; sourceTagKey: string; sourceTagValue: string; targetDimension: string; method: string; recipients: unknown; isActive: boolean; createdAt: string };
-type Preview = { rule: { name: string; targetDimension: string; method: string }; startsAt: string; endsAt: string; matchedRecords: number; allocations: { currency: string; sourceSpend: number; allocatedSpend: number; records: number; recipients: { recipient: string; weightPercent: number; amount: number }[] }[] };
+type Preview = { rule: { id: string; name: string; targetDimension: string; method: string }; runId: string | null; applied: boolean; startsAt: string; endsAt: string; matchedRecords: number; allocations: { currency: string; sourceSpend: number; allocatedSpend: number; records: number; recipients: { recipient: string; weightPercent: number; amount: number }[] }[] };
 
 export default function SharedAllocationManager({ organizationId, initialRules, initialStart, initialEnd, canManage }: {
   organizationId: string; initialRules: Rule[]; initialStart: string; initialEnd: string; canManage: boolean;
@@ -56,6 +56,21 @@ export default function SharedAllocationManager({ organizationId, initialRules, 
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to preview allocation."); }
     finally { setBusy(false); }
   }
+  async function applyPreview() {
+    if (!preview) return;
+    setBusy(true); setMessage("");
+    try {
+      const response = await fetch("/api/organizations/" + organizationId + "/allocation-rules/preview", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ruleId: preview.rule.id, startsAt: start, endsAt: end, apply: true })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Unable to apply allocation.");
+      setPreview(payload.preview);
+      setMessage("Allocation run saved to the immutable ledger and audit timeline.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to apply allocation."); }
+    finally { setBusy(false); }
+  }
   async function toggleRule(rule: Rule) {
     setBusy(true); setMessage("");
     try {
@@ -103,7 +118,8 @@ export default function SharedAllocationManager({ organizationId, initialRules, 
     {message ? <p role="status" className="analytics-muted">{message}</p> : null}
     {preview ? <section className="analytics-panel"><div className="analytics-panel-heading"><div><h2>Allocation preview: {preview.rule.name}</h2><p>{preview.startsAt} – {preview.endsAt} · {preview.matchedRecords.toLocaleString()} matched billing records · {preview.rule.method}</p></div></div>
       {!preview.allocations.length ? <div className="budget-empty"><p>No billing rows matched this rule and date range. Check exact service and tag key/value.</p></div> : preview.allocations.map((item) => <div key={item.currency} className="budget-alert-table-wrap"><h3>{item.currency} · Source {money(item.sourceSpend, item.currency)} · Allocated {money(item.allocatedSpend, item.currency)}</h3><table className="budget-alert-table"><thead><tr><th>{preview.rule.targetDimension}</th><th>Weight</th><th>Allocated amount</th></tr></thead><tbody>{item.recipients.map((recipient) => <tr key={recipient.recipient}><td>{recipient.recipient}</td><td>{recipient.weightPercent.toFixed(2)}%</td><td>{money(recipient.amount, item.currency)}</td></tr>)}</tbody></table></div>)}
-      <p className="analytics-muted">Preview only. Source cost records remain unchanged. Reconciliation is maintained per currency to 8 decimal places; credits are distributed proportionally as negative values.</p>
+      <p className="analytics-muted">{preview.applied ? "Applied snapshot " + preview.runId + " is saved in the immutable allocation ledger. Original cost records remain unchanged." : "Preview only. Apply this distribution to record an immutable allocation snapshot and audit event. Original cost records are never rewritten."} Reconciliation is maintained per currency to 8 decimal places; credits are distributed proportionally as negative values.</p>
+      {!preview.applied && canManage && preview.matchedRecords > 0 ? <button type="button" disabled={busy} onClick={applyPreview}>{busy ? "Applying…" : "Apply & record allocation"}</button> : null}
     </section> : null}
   </div>;
 }
