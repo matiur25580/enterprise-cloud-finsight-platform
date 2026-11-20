@@ -29,6 +29,7 @@ CREATE TABLE "cloud_sync_jobs" (
 );
 CREATE INDEX "cloud_sync_jobs_status_available_created_idx" ON "cloud_sync_jobs"("status", "available_at", "created_at");
 CREATE INDEX "cloud_sync_jobs_org_account_created_idx" ON "cloud_sync_jobs"("organization_id", "cloud_account_id", "created_at" DESC);
+CREATE UNIQUE INDEX "cloud_sync_jobs_one_active_per_account_idx" ON "cloud_sync_jobs"("cloud_account_id") WHERE "status" IN ('QUEUED', 'RUNNING');
 CREATE INDEX "cloud_accounts_sync_due_idx" ON "cloud_accounts"("sync_enabled", "next_sync_at") WHERE "sync_enabled" = true;
 
 ALTER TABLE "cloud_sync_jobs" ENABLE ROW LEVEL SECURITY;
