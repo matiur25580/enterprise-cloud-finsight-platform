@@ -13,11 +13,13 @@ function money(value: number, currency: string) {
 export default async function ExecutiveReportPage({ params }: { params: Promise<{ organizationId: string }> }) {
   const { organizationId } = await params;
   await requireOrganizationPermission(organizationId, "billing:read");
+  const reportEnd = new Date();
+  const reportStart = new Date(reportEnd.getTime() - 89 * 86400000);
   const [analytics, intelligence, revenue] = await Promise.all([
     getCostAnalytics(organizationId, "90d"),
     getCostIntelligence(organizationId),
     withOrganization(prisma, organizationId, (tx) => tx.revenueRecord.groupBy({
-      by: ["currency"], where: { organizationId, revenueDate: { gte: new Date(Date.now() - 89 * 86400000), lte: new Date() } },
+      by: ["currency"], where: { organizationId, revenueDate: { gte: reportStart, lte: reportEnd } },
       _sum: { amount: true }, _count: { _all: true }
     }))
   ]);
