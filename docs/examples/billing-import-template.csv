@@ -1,0 +1,3 @@
+service,amount,currency,usageDate,region,externalId,tag:team
+Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
+Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
