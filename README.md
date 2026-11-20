@@ -237,3 +237,8 @@ The workspace route `/workspace/{organizationId}/budgets/alerts` displays the la
 ### Manual retry for budget notifications
 
 Users with `budgets:manage` can retry a FAILED, PARTIAL, or NOT_CONFIGURED threshold alert from the budget alert history page. The retry API is `POST /api/organizations/{organizationId}/budgets/alerts/{alertId}/retry`. It uses an organization-scoped advisory lock, marks the event RETRYING before sending, records the retry actor in the audit log, and updates cumulative provider attempt/acceptance counts. DELIVERED and in-progress alerts cannot be retried, preventing accidental duplicate sends.
+
+
+### Budget forecast vs actual
+
+The workspace route `/workspace/{organizationId}/budgets/forecast` compares actual spend through the current UTC date with the straight-line planned spend for each budget window. It projects period-end spend using actual spend divided by elapsed budget days, multiplied by total budget days, and shows the variance to plan, forecast variance to budget, and days remaining. Results are currency-isolated and tenant-scoped. This is a directional run-rate estimate, not a seasonality-aware prediction; incomplete billing imports and future usage changes can materially change the outcome. The calculation is covered by `src/lib/budget-forecast.test.ts`. No database migration is required.
