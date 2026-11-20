@@ -296,3 +296,5 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
 
 .cloud-job-history { display: grid; gap: 4px; max-width: 360px; }
 .cloud-job-history small { line-height: 1.45; overflow-wrap: anywhere; }
+
+.cloud-account-actions input { width: min(100%, 220px); min-width: 160px; padding: 6px 8px; border: 1px solid #e7e6ef; border-radius: 6px; color: #686a7d; background: white; font: inherit; font-size: 8px; }
