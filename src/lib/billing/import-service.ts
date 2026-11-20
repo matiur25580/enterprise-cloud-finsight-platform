@@ -1,5 +1,3 @@
-import "server-only";
-
 import { ImportStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
@@ -15,9 +13,9 @@ export type BillingImportResult = {
 };
 
 /**
- * Import normalized billing rows for an organization.
- * organizationId and actorUserId must come from a server-verified session/membership,
- * never directly from untrusted request fields.
+ * Import normalized billing rows for an organization. Interactive callers must
+ * derive actorUserId from a verified session; trusted background workers omit it
+ * and create a system-originated audit event rather than impersonating a user.
  */
 export async function importBillingCsv(input: {
   organizationId: string;
