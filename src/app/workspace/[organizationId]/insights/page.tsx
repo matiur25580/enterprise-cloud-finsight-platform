@@ -12,7 +12,8 @@ export default async function CostInsightsPage({ params }: { params: Promise<{ o
   return (
     <main className="analytics-shell">
       <header className="analytics-topbar"><Link className="analytics-brand" href="/workspace">fin<span>sight</span></Link><Link className="analytics-back" href={"/workspace/" + organizationId}>Cost dashboard</Link></header>
-      <div className="analytics-content">\n        <div className="analytics-heading"><Link className="analytics-back" href={"/workspace/" + organizationId + "/recommendations"}>Open recommendation workflow</Link></div>
+      <div className="analytics-content">
+        <div className="analytics-heading"><Link className="analytics-back" href={"/workspace/" + organizationId + "/recommendations"}>Open recommendation workflow</Link></div>
         <div className="analytics-heading"><div><p className="analytics-eyebrow">FINOPS INTELLIGENCE</p><h1>Anomalies & optimization</h1><p className="analytics-subtitle">Signals calculated from your imported billing records · Generated {new Date(insights.generatedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</p></div></div>
         {!insights.hasBillingData ? <section className="analytics-empty"><h2>Waiting for billing data</h2><p>Import billing records to detect cost spikes, evaluate budget thresholds, and rank optimization opportunities. No sample alerts are generated.</p></section> : null}
         <section className="analytics-section"><div className="analytics-section-title"><h2>Cost anomalies</h2><span>14-day service baseline · minimum 7 observations</span></div>
