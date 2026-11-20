@@ -321,3 +321,24 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
 .sync-job-table td strong { color: #4b4d60; font-size: 9px; }
 .sync-job-table td small { margin-top: 4px; color: #9294a4; font-size: 8px; }
 @media (max-width: 760px) { .sync-account-health { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+
+/* Organization membership and invitation administration */
+.member-manager { display: grid; gap: 15px; }
+.member-invite-form { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(150px, .6fr) auto; align-items: end; gap: 12px; }
+.member-invite-form label { display: grid; gap: 6px; color: #77798b; font-size: 9px; }
+.member-invite-form input, .member-invite-form select, .member-actions select { min-width: 0; padding: 9px 10px; border: 1px solid #e7e6ef; border-radius: 7px; color: #55576b; background: #fff; font: inherit; font-size: 10px; }
+.member-invite-form button { padding: 10px 14px; border: 0; border-radius: 7px; color: #fff; background: #7163d9; font: inherit; font-size: 10px; font-weight: 700; }
+.member-invite-form button:disabled { opacity: .55; cursor: wait; }
+.member-feedback { margin: 10px 0 0; color: #5c5e72; font-size: 10px; }
+.member-list { display: grid; }
+.member-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 13px 0; border-top: 1px solid #f0f0f4; }
+.member-row > div:first-child { display: grid; gap: 5px; min-width: 0; }
+.member-row strong { color: #4b4d60; font-size: 10px; overflow-wrap: anywhere; }
+.member-row span { color: #9294a4; font-size: 9px; }
+.member-role { padding: 5px 8px; border-radius: 6px; color: #7063c9 !important; background: #f1efff; white-space: nowrap; }
+.member-actions { display: flex; align-items: center; gap: 8px; }
+.member-actions select { padding: 6px 8px; }
+.member-remove { padding: 6px 9px; border: 1px solid #f0dfe2; border-radius: 6px; color: #b64b58; background: #fff; font: inherit; font-size: 9px; }
+.auth-primary-link { display: inline-flex; justify-content: center; margin-top: 12px; padding: 10px 14px; border-radius: 7px; color: white; background: #7163d9; font-size: 10px; font-weight: 700; }
+@media (max-width: 760px) { .member-invite-form { grid-template-columns: 1fr; }.member-row { align-items: flex-start; }.member-actions { flex-direction: column; align-items: flex-end; } }
