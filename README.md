@@ -309,3 +309,19 @@ Open `/workspace/{organizationId}/reports/savings` for a currency-isolated summa
 ### Application security response headers
 
 The Next.js application applies baseline security headers to all routes: HSTS, clickjacking protection, MIME-sniffing protection, a restrictive referrer policy, a permissions policy disabling unused browser capabilities, and a Content Security Policy that restricts resource origins and blocks plugins/embedding. Production CSP does not enable `unsafe-eval`; the development-only policy allows it for the development toolchain. Inline scripts/styles remain allowed for current Next.js rendering compatibility, so this is a hardened baseline rather than a nonce-based strict CSP. Review CSP reports and required provider origins before tightening it further. HSTS assumes the production domain and all its subdomains are served exclusively over HTTPS; do not enable it for a domain with HTTP-only subdomains.
+
+
+### Persistent API rate limiting and login abuse protection
+
+Credential login callbacks are protected by a PostgreSQL-backed fixed-window limiter: **10 attempts per client network address per 15 minutes**. Counters are updated atomically with an upsert, so multiple application instances share the same limit rather than maintaining isolated in-memory counters. Requests over the limit receive HTTP 429 with a `Retry-After` header; if the limiter database is unavailable, credential login fails closed with HTTP 503.
+
+Only a keyed SHA-256 HMAC digest of the client address and login route bucket is stored; raw client addresses and credentials are not written to the rate-limit table. The HMAC uses `AUTH_SECRET` (or `NEXTAUTH_SECRET` as a compatibility fallback). Production deployments must configure a strong secret and a trusted reverse proxy that overwrites `x-real-ip` or `x-forwarded-for`; otherwise client-address identification is intentionally rejected. The limiter table is global security infrastructure, not tenant data, and is accessible only through the server-side application database connection. Expired buckets are pruned in bounded batches during limiter requests.
+
+Apply the migration before deploying the application:
+
+```bash
+npm run db:deploy
+npm run db:generate
+```
+
+This baseline protects the Auth.js credentials callback. Other public or high-cost endpoints should receive route-specific limits as their abuse profiles are established; a single global limit is intentionally not imposed on all authenticated API traffic.
