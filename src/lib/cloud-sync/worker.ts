@@ -106,12 +106,11 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
         }
       });
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncedAt: completelyRejected ? undefined : new Date(), lastSyncAttemptAt: new Date() } });
-      await tx.auditLog.create({ data: {
-        organizationId: job.organization_id, actorUserId: null,
-        action: completelyRejected ? "CLOUD_SYNC_FAILED" : "CLOUD_SYNC_SUCCEEDED",
-        entityType: "CloudSyncJob", entityId: job.id,
-        metadata: { attempt: job.attempt_count, totalRows: imported.totalRows, importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows, errorCode: completelyRejected ? "BILLING_ROWS_REJECTED" : null }
-      } });
+    });
+    await writeSyncAudit(job, completelyRejected ? "CLOUD_SYNC_FAILED" : "CLOUD_SYNC_SUCCEEDED", {
+      attempt: job.attempt_count, totalRows: imported.totalRows, importedRows: imported.importedRows,
+      rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows,
+      errorCode: completelyRejected ? "BILLING_ROWS_REJECTED" : null
     });
     if (completelyRejected) {
       await notifyTerminalOutcome(job, "FAILED", { errorCode: "BILLING_ROWS_REJECTED", importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows });
@@ -134,14 +133,12 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
         }
       });
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncAttemptAt: new Date() } });
-      if (blocked || !retry) await tx.auditLog.create({ data: {
-        organizationId: job.organization_id, actorUserId: null,
-        action: blocked ? "CLOUD_SYNC_BLOCKED" : "CLOUD_SYNC_FAILED",
-        entityType: "CloudSyncJob", entityId: job.id,
-        metadata: { attempt: job.attempt_count, maxAttempts: job.max_attempts, errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED" }
-      } });
     });
     if (blocked || !retry) {
+      await writeSyncAudit(job, blocked ? "CLOUD_SYNC_BLOCKED" : "CLOUD_SYNC_FAILED", {
+        attempt: job.attempt_count, maxAttempts: job.max_attempts,
+        errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED"
+      });
       await notifyTerminalOutcome(job, blocked ? "BLOCKED" : "FAILED", { errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED" });
     }
   }
