@@ -85,7 +85,7 @@ function hotp(secret: string, counter: number): string {
 }
 
 export function verifyTotp(secret: string, candidate: string, now = Date.now()): boolean {
-  if (!/^\\d{6}$/.test(candidate)) return false;
+  if (!/^\d{6}$/.test(candidate)) return false;
   const counter = Math.floor(now / 1000 / TOTP_PERIOD_SECONDS);
   for (let offset = -TOTP_WINDOW; offset <= TOTP_WINDOW; offset += 1) {
     const expected = hotp(secret, counter + offset);
