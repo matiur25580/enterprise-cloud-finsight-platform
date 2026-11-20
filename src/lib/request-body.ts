@@ -48,7 +48,7 @@ export async function readLimitedJson(
   }
 
   try {
-    return { ok: true, value: JSON.parse(new TextDecoder().decode(body)) as unknown };
+    return { ok: true, value: JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(body)) as unknown };
   } catch {
     return { ok: false, reason: "invalid_json" };
   }
