@@ -45,10 +45,13 @@ export function getRateLimitDecision(
  * Uses a keyed digest so raw client addresses are never persisted.
  * The reverse proxy must overwrite forwarded-address headers.
  */
-export async function consumeLoginRateLimit(clientAddress: string): Promise<RateLimitDecision> {
+export async function consumeLoginRateLimit(
+  clientAddress: string,
+  action: "credentials" | "mfa" = "credentials"
+): Promise<RateLimitDecision> {
   const secret = getRateLimitSecret();
   const keyHash = createHmac("sha256", secret)
-    .update(`login:credentials:${clientAddress}`)
+    .update(`login:${action}:${clientAddress}`)
     .digest("hex");
 
   const rows = await prisma.$queryRaw<
