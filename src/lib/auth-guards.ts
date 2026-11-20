@@ -26,7 +26,7 @@ export async function requireOrganizationPermission(
   );
 
   if (!membership || !hasPermission(membership.role, permission)) {
-    throw new Error("FORBIDDEN");
+    redirect("/forbidden");
   }
   return { user, membership };
 }
