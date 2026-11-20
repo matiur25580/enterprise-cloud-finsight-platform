@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
 import { requireOrganizationPermission } from "@/lib/auth-guards";
 import { hasPermission } from "@/lib/permissions";
-import SharedAllocationManager from "./shared-allocation-manager";
+import SharedAllocationManager from "../shared-allocation-manager";
 
 export default async function SharedAllocationPage({ params }: { params: Promise<{ organizationId: string }> }) {
   const { organizationId } = await params;
