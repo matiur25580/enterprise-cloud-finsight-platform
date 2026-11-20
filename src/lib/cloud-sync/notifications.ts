@@ -84,3 +84,53 @@ export async function deliverSyncAlert(
   const results = await Promise.allSettled(tasks);
   return { attempted: tasks.length, delivered: results.filter((result) => result.status === "fulfilled").length };
 }
+
+
+export type BudgetThresholdAlert = {
+  budgetName: string;
+  currency: string;
+  budgetAmount: number;
+  spent: number;
+  utilizationPercent: number;
+  thresholdPercent: number;
+  startsAt: string;
+  endsAt: string;
+};
+
+/** Best-effort budget alert delivery using the existing worker Slack/Resend configuration. */
+export async function deliverBudgetThresholdAlert(
+  alert: BudgetThresholdAlert,
+  fetcher: Fetcher = fetch,
+  env: AlertEnvironment = process.env
+): Promise<{ attempted: number; delivered: number }> {
+  const message = [
+    "FinSight budget threshold reached",
+    `Budget: ${alert.budgetName}`,
+    `Spend: ${alert.spent.toFixed(2)} ${alert.currency} / ${alert.budgetAmount.toFixed(2)} ${alert.currency}`,
+    `Utilization: ${alert.utilizationPercent.toFixed(1)}% (threshold ${alert.thresholdPercent}%)`,
+    `Budget window: ${alert.startsAt} to ${alert.endsAt}`
+  ].join("\n");
+  const tasks: Promise<unknown>[] = [];
+  const webhook = env.SLACK_SYNC_ALERT_WEBHOOK_URL;
+  if (webhook) {
+    const safeUrl = slackWebhookUrl(webhook);
+    if (safeUrl) tasks.push(fetcher(safeUrl, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: message }), signal: AbortSignal.timeout(10_000)
+    }).then((response) => { if (!response.ok) throw new Error("Slack budget alert delivery failed."); }));
+  }
+  const recipients = emailAddresses(env.SYNC_ALERT_EMAIL_TO);
+  if (env.RESEND_API_KEY && env.SYNC_ALERT_EMAIL_FROM && recipients.length > 0) {
+    tasks.push(fetcher("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        from: env.SYNC_ALERT_EMAIL_FROM, to: recipients,
+        subject: `FinSight budget alert: ${alert.budgetName} at ${alert.thresholdPercent}%`,
+        text: message
+      }), signal: AbortSignal.timeout(10_000)
+    }).then((response) => { if (!response.ok) throw new Error("Email budget alert delivery failed."); }));
+  }
+  const results = await Promise.allSettled(tasks);
+  return { attempted: tasks.length, delivered: results.filter((result) => result.status === "fulfilled").length };
+}
