@@ -5,6 +5,7 @@ import { withUserContext } from "@/lib/user-context";
 import { withOrganization } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
 import { enqueueCloudSync, listCloudSyncJobs } from "@/lib/cloud-sync/queue";
+import { consumeApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,15 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   if (!session?.user?.id) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   const { organizationId, accountId } = await params;
   if (!await authorize(organizationId, session.user.id)) return NextResponse.json({ error: "Cloud account management permission required." }, { status: 403 });
+  const rateLimit = await consumeApiRateLimit({
+    organizationId,
+    userId: session.user.id,
+    bucket: "cloud:sync-enqueue",
+    limit: 10,
+    windowSeconds: 900
+  });
+  const limitedResponse = rateLimitResponse(rateLimit);
+  if (limitedResponse) return limitedResponse;
   try {
     const result = await enqueueCloudSync({ organizationId, cloudAccountId: accountId });
     await withOrganization(prisma, organizationId, (tx) => tx.auditLog.create({ data: { organizationId, actorUserId: session.user.id, action: "CLOUD_SYNC_QUEUED", entityType: "CloudSyncJob", entityId: result.job.id, metadata: { cloudAccountId: accountId, alreadyQueued: result.alreadyQueued } } }));
