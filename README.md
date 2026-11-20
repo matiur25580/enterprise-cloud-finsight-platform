@@ -132,6 +132,10 @@ GRANT CONNECT ON DATABASE <database_name> TO finsight_sync_worker;
 GRANT USAGE ON SCHEMA public TO finsight_sync_worker;
 GRANT SELECT, UPDATE ON TABLE cloud_accounts TO finsight_sync_worker;
 GRANT SELECT, INSERT, UPDATE ON TABLE cloud_sync_jobs TO finsight_sync_worker;
+GRANT SELECT, INSERT, UPDATE ON TABLE import_batches TO finsight_sync_worker;
+GRANT SELECT, INSERT ON TABLE cost_records TO finsight_sync_worker;
+GRANT INSERT ON TABLE import_issues TO finsight_sync_worker;
+GRANT INSERT ON TABLE audit_logs TO finsight_sync_worker;
 ```
 
 Set `SYNC_WORKER_DATABASE_URL` on the worker service only, run `npm run sync:worker`, and keep the normal web-service `DATABASE_URL` on the restricted tenant-scoped runtime role. Do not use a superuser for either runtime. The worker drains a PostgreSQL queue with row locks, recovers stale leases, resolves secrets, calls read-only provider billing APIs, and imports normalized results. Keep SYNC_WORKER_DATABASE_URL, SECRET_RESOLVER_URL, and SECRET_RESOLVER_TOKEN only in the worker environment. Do not set the worker database URL or secret-resolver token on the public web service.
