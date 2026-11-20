@@ -290,3 +290,6 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
 .cloud-account-actions button { padding: 6px 8px; border: 1px solid #e7e6ef; border-radius: 6px; color: #686a7d; background: white; font: inherit; font-size: 8px; }
 .cloud-message { color: #55576b; font-size: 10px; }
 @media (max-width: 760px) { .cloud-account-form { grid-template-columns: 1fr; }.cloud-account-row { grid-template-columns: 1fr; gap: 10px; }.cloud-account-actions { justify-content: flex-start; } }
+
+.cloud-account-actions select { max-width: 145px; padding: 6px 8px; border: 1px solid #e7e6ef; border-radius: 6px; color: #686a7d; background: white; font: inherit; font-size: 8px; }
+.cloud-account-actions select:disabled { opacity: .5; cursor: wait; }
