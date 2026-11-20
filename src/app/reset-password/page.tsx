@@ -15,8 +15,11 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const value = new URLSearchParams(window.location.search).get("token") ?? "";
-    const frame = window.requestAnimationFrame(() => setToken(value));
-    return () => window.cancelAnimationFrame(frame);
+    // Keep the one-time reset credential out of the address bar and browser history.
+    if (value) {
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+    }
+    setToken(value);
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
