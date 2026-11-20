@@ -19,7 +19,9 @@ export default function ResetPasswordPage() {
     if (value) {
       window.history.replaceState(window.history.state, "", window.location.pathname);
     }
-    setToken(value);
+    if (!value) return;
+    const frame = window.requestAnimationFrame(() => setToken(value));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
