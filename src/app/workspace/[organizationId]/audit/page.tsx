@@ -31,6 +31,7 @@ function describeAction(action: string): string {
     REVENUE_RECORDED: "Revenue record added",
     RECOMMENDATION_CREATED: "Optimization recommendation created",
     RECOMMENDATION_STATUS_CHANGED: "Optimization recommendation status changed",
+    RECOMMENDATION_IMPACT_RECORDED: "Recommendation savings impact measured",
     RECOMMENDATION_AUTO_GENERATED: "Evidence-backed recommendation generated"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
