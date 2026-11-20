@@ -52,6 +52,7 @@ model Organization {
   budgets         Budget[]
   auditLogs       AuditLog[]
   recommendations Recommendation[]
+  importBatches    ImportBatch[]
   @@map("organizations")
 }
 
@@ -65,6 +66,7 @@ model User {
   updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships   Membership[]
   auditLogs     AuditLog[]
+  uploadedImports ImportBatch[]
   @@map("users")
 }
 
@@ -96,6 +98,7 @@ model CloudAccount {
   updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   costRecords       CostRecord[]
+  importBatches     ImportBatch[]
   @@unique([organizationId, id])
   @@unique([organizationId, provider, externalAccountId])
   @@index([organizationId, provider, status])
@@ -115,10 +118,16 @@ model CostRecord {
   currency       String       @db.VarChar(3)
   usageDate      DateTime     @map("usage_date") @db.Date
   tags           Json         @default("{}")
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  cloudAccount   CloudAccount @relation(fields: [organizationId, cloudAccountId], references: [organizationId, id], onDelete: Cascade)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  fingerprint     String
+  importBatchId   String?       @map("import_batch_id")
+  sourceRowNumber Int?          @map("source_row_number")
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cloudAccount    CloudAccount  @relation(fields: [organizationId, cloudAccountId], references: [organizationId, id], onDelete: Cascade)
+  importBatch     ImportBatch?  @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
   @@unique([cloudAccountId, externalId])
+  @@unique([cloudAccountId, fingerprint])
+  @@index([importBatchId])
   @@index([organizationId, usageDate])
   @@index([organizationId, service, usageDate])
   @@index([cloudAccountId, usageDate])
@@ -159,6 +168,49 @@ model AuditLog {
   @@index([organizationId, entityType, entityId])
   @@index([actorUserId, createdAt])
   @@map("audit_logs")
+}
+
+
+enum ImportStatus {
+  PROCESSING
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+  @@map("import_status")
+}
+
+model ImportBatch {
+  id               String       @id @default(cuid())
+  organizationId   String       @map("organization_id")
+  cloudAccountId   String       @map("cloud_account_id")
+  uploadedByUserId String       @map("uploaded_by_user_id")
+  fileName         String       @map("file_name") @db.VarChar(255)
+  status           ImportStatus @default(PROCESSING)
+  totalRows        Int          @default(0) @map("total_rows")
+  importedRows     Int          @default(0) @map("imported_rows")
+  rejectedRows     Int          @default(0) @map("rejected_rows")
+  duplicateRows    Int          @default(0) @map("duplicate_rows")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt      DateTime?    @map("completed_at") @db.Timestamptz(6)
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cloudAccount     CloudAccount @relation(fields: [organizationId, cloudAccountId], references: [organizationId, id], onDelete: Cascade)
+  uploadedBy       User         @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  costRecords      CostRecord[]
+  issues           ImportIssue[]
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, status])
+  @@map("import_batches")
+}
+
+model ImportIssue {
+  id            String      @id @default(cuid())
+  importBatchId String      @map("import_batch_id")
+  rowNumber     Int         @map("row_number")
+  errorCode     String      @map("error_code") @db.VarChar(80)
+  message       String      @db.VarChar(1000)
+  importBatch   ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  @@unique([importBatchId, rowNumber])
+  @@map("import_issues")
 }
 
 model Recommendation {
