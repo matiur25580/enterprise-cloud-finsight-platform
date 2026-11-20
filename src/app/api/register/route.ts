@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { consumeRegistrationRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { readLimitedJson } from "@/lib/request-body";
 
 export const runtime = "nodejs";
 
@@ -48,14 +49,15 @@ export async function POST(request: Request) {
       { status: 503, headers: { "Cache-Control": "no-store" } }
     );
   }
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON request." }, { status: 400 });
+  const body = await readLimitedJson(request);
+  if (!body.ok) {
+    return NextResponse.json(
+      { error: body.reason === "too_large" ? "Request body is too large." : "Invalid JSON request." },
+      { status: body.reason === "too_large" ? 413 : 400, headers: { "Cache-Control": "no-store" } }
+    );
   }
 
-  const parsed = registrationSchema.safeParse(body);
+  const parsed = registrationSchema.safeParse(body.value);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Please provide a valid name, organization, email, and a password of at least 12 characters." },
