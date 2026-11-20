@@ -242,3 +242,8 @@ Users with `budgets:manage` can retry a FAILED, PARTIAL, or NOT_CONFIGURED thres
 ### Budget forecast vs actual
 
 The workspace route `/workspace/{organizationId}/budgets/forecast` compares actual spend through the current UTC date with the straight-line planned spend for each budget window. It projects period-end spend using actual spend divided by elapsed budget days, multiplied by total budget days, and shows the variance to plan, forecast variance to budget, and days remaining. Results are currency-isolated and tenant-scoped. This is a directional run-rate estimate, not a seasonality-aware prediction; incomplete billing imports and future usage changes can materially change the outcome. The calculation is covered by `src/lib/budget-forecast.test.ts`. No database migration is required.
+
+
+### Forecast accuracy tracking
+
+From an active budget window, users with `budgets:manage` can capture an immutable forecast snapshot from `/workspace/{organizationId}/budgets/forecast`. The snapshot records the budget window, currency, budget limit, forecasted period-end spend, and actual spend at capture time in the organization audit ledger. The accuracy page at `/workspace/{organizationId}/budgets/forecast/accuracy` compares each saved forecast with the final imported spend after the budget end date and reports absolute error and mean absolute percentage error (MAPE). Snapshots are tenant-scoped, visible to workspace readers, and included in the audit timeline. Accuracy is based on imported billing data; late or missing provider records can change the measured result. No database migration is required because snapshots use the existing audit log.
