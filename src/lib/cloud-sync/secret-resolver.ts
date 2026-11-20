@@ -1,4 +1,4 @@
-import { ProviderApiError, ProviderCredentialConfigurationError } from "./provider-adapters";
+import { ProviderApiError, ProviderCredentialConfigurationError } from "./errors";
 
 type Secret = Record<string, unknown>;
 type FetchLike = typeof fetch;
