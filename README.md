@@ -121,3 +121,17 @@ No license has been selected yet. Until a license is added, all rights are reser
 ### Authenticated CSV uploads
 
 Open an organization workspace and select **Import billing CSV**. Uploads require the `billing:import` permission and an active cloud account in that organization. Files are limited to 5 MB and 20,000 rows. The API derives the actor from the Auth.js session, validates organization membership server-side, records rejected rows and duplicates, and writes an audit event. A downloadable template is available at `/billing-import-template.csv`.
+
+### Cloud sync worker
+
+The application and worker use separate database credentials. Keep `SYNC_WORKER_DATABASE_URL` only in the background worker environment; never expose it to the Next.js web service. A database administrator must provision a dedicated, non-superuser worker role with RLS bypass and narrowly scoped table grants (managed PostgreSQL providers may restrict this operation):
+
+```sql
+CREATE ROLE finsight_sync_worker LOGIN BYPASSRLS PASSWORD '<managed-out-of-band-secret>';
+GRANT CONNECT ON DATABASE <database_name> TO finsight_sync_worker;
+GRANT USAGE ON SCHEMA public TO finsight_sync_worker;
+GRANT SELECT, UPDATE ON TABLE cloud_accounts TO finsight_sync_worker;
+GRANT SELECT, INSERT, UPDATE ON TABLE cloud_sync_jobs TO finsight_sync_worker;
+```
+
+Set `SYNC_WORKER_DATABASE_URL` on the worker service only, run `npm run sync:worker`, and keep the normal web-service `DATABASE_URL` on the restricted tenant-scoped runtime role. Do not use a superuser for either runtime. The worker drains a PostgreSQL queue with row locks and recovers stale leases; it marks jobs `BLOCKED` until the provider connector is installed. It does not retrieve credentials or contact cloud APIs yet.
