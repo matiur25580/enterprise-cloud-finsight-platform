@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { withUserContext } from "@/lib/user-context";
 import { withOrganization } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
-import { RecommendationStatus, Prisma } from "@prisma/client";
+import { RecommendationStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
 const schema=z.object({status:z.nativeEnum(RecommendationStatus)});
