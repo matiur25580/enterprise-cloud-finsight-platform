@@ -14,7 +14,7 @@ export default async function CloudAccountsPage({ params }: { params: Promise<{ 
       id: true, provider: true, externalAccountId: true, name: true, currency: true, status: true,
       credentialRef: true, lastSyncedAt: true, lastSyncAttemptAt: true, syncEnabled: true,
       syncIntervalMinutes: true, nextSyncAt: true,
-      syncJobs: { take: 1, orderBy: { createdAt: "desc" }, select: { status: true, errorMessage: true, createdAt: true } }
+      syncJobs: { take: 5, orderBy: { createdAt: "desc" }, select: { status: true, trigger: true, attemptCount: true, errorMessage: true, createdAt: true } }
     }
   }));
   return <main className="analytics-shell">
@@ -27,7 +27,7 @@ export default async function CloudAccountsPage({ params }: { params: Promise<{ 
         currency: account.currency, status: account.status, credentialReferenceConfigured: Boolean(account.credentialRef),
         lastSyncedAt: account.lastSyncedAt?.toISOString() ?? null, lastSyncAttemptAt: account.lastSyncAttemptAt?.toISOString() ?? null,
         syncEnabled: account.syncEnabled, syncIntervalMinutes: account.syncIntervalMinutes, nextSyncAt: account.nextSyncAt?.toISOString() ?? null,
-        latestSyncJob: account.syncJobs[0] ? { status: account.syncJobs[0].status, errorMessage: account.syncJobs[0].errorMessage, createdAt: account.syncJobs[0].createdAt.toISOString() } : null
+        syncJobs: account.syncJobs.map((job) => ({ status: job.status, trigger: job.trigger, attemptCount: job.attemptCount, errorMessage: job.errorMessage, createdAt: job.createdAt.toISOString() }))
       }))} />
     </div>
   </main>;
