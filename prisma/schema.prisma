@@ -280,8 +280,8 @@ model RecommendationImpact {
   createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   recommendation        Recommendation @relation(fields: [organizationId, recommendationId], references: [organizationId, id], onDelete: Cascade)
-  @@unique([recommendationId, baselineStartsAt, baselineEndsAt, observedStartsAt, observedEndsAt])
-  @@index([organizationId, recommendationId, createdAt(sort: Desc)])
+  @@unique([recommendationId, baselineStartsAt, baselineEndsAt, observedStartsAt, observedEndsAt], map: "recommendation_impacts_period_key")
+  @@index([organizationId, recommendationId, createdAt(sort: Desc)], map: "recommendation_impacts_org_recommendation_created_idx")
   @@map("recommendation_impacts")
 }
 
