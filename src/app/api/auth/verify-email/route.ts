@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
   if (!parsed.success) {
     destination.searchParams.set("verification", "invalid");
-    return NextResponse.redirect(destination);
+    return NextResponse.redirect(destination, { headers: { "Cache-Control": "no-store" } });
   }
 
   const tokenHash = hashEmailVerificationToken(parsed.data);
