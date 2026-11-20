@@ -217,3 +217,8 @@ Organization owners and administrators with `members:manage` can open `/workspac
 ### Organization workspace settings
 
 Organization owners with `organization:manage` can open `/workspace/{organizationId}/settings` to update the workspace display name. The API validates a 2–80 character name, derives a normalized URL slug, rejects slug collisions, and records previous/new names and slugs in the organization audit log. Organization IDs remain stable, so existing tenant-scoped billing data, cloud accounts, budgets, invitations, and member relationships are not moved or recreated. The workspace settings page is owner-only; administrators and other members retain read access to the cost dashboard but cannot rename the organization. Workspace profile changes are included in the audit timeline and CSV export.
+
+
+### Workspace budget management
+
+Organization members can open `/workspace/{organizationId}/budgets` to review budget limits and actual spend. Owners, administrators, and FinOps analysts with `budgets:manage` can create, edit, pause/reactivate, and delete budgets. Each budget stores a name, positive amount, ISO currency, monthly/quarterly/annual classification, inclusive date range, and configurable 1–100% alert thresholds. Spend is aggregated only for the same currency and within the configured date range; currencies are never converted or combined. Budget changes are recorded as `BUDGET_CREATED`, `BUDGET_UPDATED`, and `BUDGET_DELETED` audit events and appear in the timeline and CSV export. No database migration is required because the Budget model and table were created in the initial schema.
