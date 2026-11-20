@@ -225,3 +225,59 @@ export function rateLimitResponse(decision: RateLimitDecision): Response | null 
     }
   );
 }
+
+
+const REGISTRATION_WINDOW_SECONDS = 60 * 60;
+const REGISTRATION_MAX_ATTEMPTS = 5;
+
+/** Apply a separate IP-based quota to public account creation. */
+export async function consumeRegistrationRateLimit(clientAddress: string): Promise<RateLimitDecision> {
+  const secret = getRateLimitSecret();
+  const keyHash = createHmac("sha256", secret)
+    .update(`registration:create-account:${clientAddress}`)
+    .digest("hex");
+
+  const rows = await prisma.$queryRaw<
+    Array<{ request_count: number; window_started_at: Date }>
+  >`
+    WITH expired AS (
+      DELETE FROM "api_rate_limit_buckets"
+      WHERE "key_hash" IN (
+        SELECT "key_hash" FROM "api_rate_limit_buckets"
+        WHERE "expires_at" <= CURRENT_TIMESTAMP
+        ORDER BY "expires_at" LIMIT 50
+      )
+      RETURNING 1
+    ),
+    cleanup AS (SELECT COUNT(*) FROM expired)
+    INSERT INTO "api_rate_limit_buckets"
+      ("key_hash", "window_started_at", "request_count", "expires_at")
+    SELECT ${keyHash}, CURRENT_TIMESTAMP, 1,
+      CURRENT_TIMESTAMP + (${REGISTRATION_WINDOW_SECONDS} * INTERVAL '1 second')
+    FROM cleanup
+    ON CONFLICT ("key_hash") DO UPDATE SET
+      "request_count" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${REGISTRATION_WINDOW_SECONDS} * INTERVAL '1 second')
+        THEN 1 ELSE "api_rate_limit_buckets"."request_count" + 1 END,
+      "window_started_at" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${REGISTRATION_WINDOW_SECONDS} * INTERVAL '1 second')
+        THEN CURRENT_TIMESTAMP ELSE "api_rate_limit_buckets"."window_started_at" END,
+      "expires_at" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${REGISTRATION_WINDOW_SECONDS} * INTERVAL '1 second')
+        THEN CURRENT_TIMESTAMP + (${REGISTRATION_WINDOW_SECONDS} * INTERVAL '1 second')
+        ELSE "api_rate_limit_buckets"."expires_at" END
+    RETURNING "request_count", "window_started_at"
+  `;
+
+  const row = rows[0];
+  if (!row) throw new Error("Registration rate limit storage did not return a counter");
+  return getRateLimitDecision(
+    Number(row.request_count),
+    REGISTRATION_MAX_ATTEMPTS,
+    row.window_started_at,
+    REGISTRATION_WINDOW_SECONDS
+  );
+}
