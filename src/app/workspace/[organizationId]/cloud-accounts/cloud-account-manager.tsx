@@ -14,6 +14,7 @@ export default function CloudAccountManager({ organizationId, initialAccounts, c
   const [accounts, setAccounts] = useState(initialAccounts);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [credentialRefs, setCredentialRefs] = useState<Record<string, string>>({});
   const [provider, setProvider] = useState("AWS");
   const [name, setName] = useState("");
   const [externalAccountId, setExternalAccountId] = useState("");
@@ -35,7 +36,8 @@ export default function CloudAccountManager({ organizationId, initialAccounts, c
     try {
       const response = await fetch("/api/organizations/" + organizationId + "/cloud-accounts/" + accountId, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(update) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error ?? "Unable to update account.");
-      setAccounts((current) => current.map((account) => account.id === accountId ? { ...account, ...result.account } : account));
+      setAccounts((current) => current.map((account) => account.id === accountId ? { ...account, ...result.account, ...(Object.prototype.hasOwnProperty.call(update, "credentialRef") ? { credentialReferenceConfigured: Boolean(update.credentialRef) } : {}) } : account));
+      if (Object.prototype.hasOwnProperty.call(update, "credentialRef")) setCredentialRefs((current) => ({ ...current, [accountId]: "" }));
       setMessage("Cloud account settings updated.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Request failed."); }
     finally { setBusy(null); }
