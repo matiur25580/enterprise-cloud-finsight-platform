@@ -36,13 +36,14 @@ export default async function OrganizationDashboard({
   let access;
   try {
     access = await requireOrganizationPermission(organizationId, "organization:read");
-  } catch {
-    notFound();
+  } catch (error) {
+    if (error instanceof Error && error.message === "FORBIDDEN") notFound();
+    throw error;
   }
 
   const analytics = await getCostAnalytics(organizationId, range);
   const organizationName = analytics.organizationName;
-  const totalRecords = analytics.daily.length;
+  const dataPoints = analytics.daily.length;
   const dailyMax = Math.max(1, ...analytics.daily.map((item) => item.spend));
   const serviceMax = Math.max(1, ...analytics.serviceBreakdown.map((item) => item.spend));
   const topCurrency = analytics.summaries[0]?.currency;
@@ -160,7 +161,7 @@ export default async function OrganizationDashboard({
 
         <footer className="analytics-footer">
           <span>FinSight · Live database analytics</span>
-          <span>{totalRecords} daily currency data points · {topCurrency ? "Top currency: " + topCurrency : "Waiting for billing records"}</span>
+          <span>{dataPoints} daily currency data points · {topCurrency ? "Top currency: " + topCurrency : "Waiting for billing records"}</span>
         </footer>
       </div>
     </main>
