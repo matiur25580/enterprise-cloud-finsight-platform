@@ -1,4 +1,3 @@
-import "server-only";
 import { CloudSyncJobStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
