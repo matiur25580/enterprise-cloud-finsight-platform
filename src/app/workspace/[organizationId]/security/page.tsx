@@ -41,7 +41,7 @@ export default async function SecurityDashboardPage({ params }: { params: Promis
     <div className="analytics-content">
       <div className="analytics-heading">
         <div><p className="analytics-eyebrow">SECURITY OPERATIONS · ADMIN ONLY</p><h1>Security activity</h1><p className="analytics-subtitle">API abuse signals · trailing 30 days · latest 100 recorded events</p></div>
-        <Link className="analytics-back" href={"/workspace/" + organizationId}>Back to cost dashboard</Link>
+        <div className="flex flex-wrap gap-2"><Link className="analytics-back" href={"/workspace/" + organizationId}>Back to cost dashboard</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/security/incidents"}>Incident response</Link></div>
       </div>
 
       <section className="analytics-section">
