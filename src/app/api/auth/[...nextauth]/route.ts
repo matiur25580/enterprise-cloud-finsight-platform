@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const form = new URLSearchParams(await request.clone().text());
     const accountIdentifier = form.get("email")?.trim();
-    if (accountIdentifier && accountIdentifier.length <= 254) {
+    if (accountIdentifier && accountIdentifier.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountIdentifier)) {
       const accountDecision = await consumeLoginAccountRateLimit(accountIdentifier);
       if (!accountDecision.allowed) {
         const retryAfter = Math.max(1, Math.ceil((accountDecision.resetAt.getTime() - Date.now()) / 1000));

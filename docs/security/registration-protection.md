@@ -21,4 +21,4 @@ The request-size cap is intentionally larger than the maximum accepted registrat
 
 ## Login abuse protection
 
-Credential sign-in requests are limited independently by client network address and by the normalized account identifier supplied with the request. Account identifiers are trimmed and lowercased before deriving a keyed HMAC bucket identifier; raw email addresses are not written to the rate-limit table. Both quotas use the shared database-backed fixed-window counter and fail closed if the rate-limit store is unavailable. The account quota complements, rather than replaces, network-based throttling.
+Credential sign-in requests are limited to 10 attempts per 15-minute window independently by client network address and by the normalized account identifier supplied with the request. Account identifiers are trimmed and lowercased before deriving a keyed HMAC bucket identifier; raw email addresses are not written to the rate-limit table. Both quotas use the shared database-backed fixed-window counter and fail closed if the rate-limit store is unavailable. The account quota complements, rather than replaces, network-based throttling.
