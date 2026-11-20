@@ -20,7 +20,8 @@ function describeAction(action: string): string {
     ORGANIZATION_MEMBER_REMOVED: "Organization member removed",
     BUDGET_CREATED: "Budget created",
     BUDGET_UPDATED: "Budget updated",
-    BUDGET_DELETED: "Budget deleted"
+    BUDGET_DELETED: "Budget deleted",
+    BUDGET_THRESHOLD_ALERT_SENT: "Budget threshold notification triggered"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
 }
