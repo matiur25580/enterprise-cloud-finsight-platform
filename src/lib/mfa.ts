@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { decryptTotpSecret, getMatchingTotpTimeStep, hashRecoveryCode, normalizeRecoveryCode } from "@/lib/mfa-crypto";
+import { decryptTotpSecret, getMatchingTotpTimeStep, consumeRecoveryCode } from "@/lib/mfa-crypto";
 
 export {
   createTotpSecret,
@@ -11,6 +11,7 @@ export {
   getMatchingTotpTimeStep,
   createRecoveryCodes,
   hashRecoveryCode,
+  consumeRecoveryCode,
   createTotpUri
 } from "@/lib/mfa-crypto";
 
@@ -40,11 +41,11 @@ export async function verifyAndConsumeMfaFactor(
     return consumed.count === 1;
   }
 
-  if (!normalizeRecoveryCode(candidate)) return false;
-  const codeHash = hashRecoveryCode(candidate);
-  const result = await prisma.mfaRecoveryCode.updateMany({
-    where: { userId, codeHash, usedAt: null },
-    data: { usedAt: new Date() }
+  return consumeRecoveryCode(candidate, async (codeHash) => {
+    const result = await prisma.mfaRecoveryCode.updateMany({
+      where: { userId, codeHash, usedAt: null },
+      data: { usedAt: new Date() }
+    });
+    return result.count;
   });
-  return result.count === 1;
 }

@@ -123,6 +123,15 @@ export function hashRecoveryCode(code: string): string {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
+/** Delegates single-use enforcement to an atomic persistence operation (e.g. Prisma updateMany). */
+export async function consumeRecoveryCode(
+  candidate: string,
+  consumeHash: (codeHash: string) => Promise<number>
+): Promise<boolean> {
+  if (!normalizeRecoveryCode(candidate)) return false;
+  return (await consumeHash(hashRecoveryCode(candidate))) === 1;
+}
+
 export function createTotpUri(secret: string, email: string): string {
   const issuer = "FinSight";
   const label = `${issuer}:${email}`;

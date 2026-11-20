@@ -7,6 +7,7 @@ import {
   encryptTotpSecret,
   hashRecoveryCode,
   normalizeRecoveryCode,
+  consumeRecoveryCode,
   getMatchingTotpTimeStep,
   verifyTotp
 } from "@/lib/mfa-crypto";
@@ -50,4 +51,33 @@ testCase("recovery codes are unique, formatted and hashed consistently", () => {
   assert.equal(normalizeRecoveryCode("ABC!-1234-5678-9ABC"), null);
   assert.equal(normalizeRecoveryCode("ABCD-1234-5678"), null);
   assert.throws(() => hashRecoveryCode("ABCD!123456789ABC"));
+});
+
+
+testCase("recovery code consumption is single-use under concurrent attempts", async () => {
+  const code = "A1B2-C3D4-E5F6-7890";
+  const storedHash = hashRecoveryCode(code);
+  let used = false;
+  const atomicConsume = async (candidateHash: string): Promise<number> => {
+    if (candidateHash !== storedHash || used) return 0;
+    used = true;
+    return 1;
+  };
+
+  const results = await Promise.all([
+    consumeRecoveryCode(code, atomicConsume),
+    consumeRecoveryCode(code.toLowerCase().replace(/-/g, " "), atomicConsume)
+  ]);
+  assert.equal(results.filter(Boolean).length, 1);
+  assert.equal(used, true);
+});
+
+testCase("invalid recovery codes never reach the persistence consumer", async () => {
+  let calls = 0;
+  const result = await consumeRecoveryCode("ABCD!123456789ABC", async () => {
+    calls += 1;
+    return 1;
+  });
+  assert.equal(result, false);
+  assert.equal(calls, 0);
 });
