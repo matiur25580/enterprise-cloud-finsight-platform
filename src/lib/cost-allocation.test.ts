@@ -14,16 +14,16 @@ test("summarizes allocation by currency without combining currencies", () => {
     { currency: "USD", allocation: null, spend: "25.00", records: 1 },
     { currency: "INR", allocation: "Platform", spend: "500.00", records: 3 }
   ]);
-  assert.equal(result.totalSpend, 625);
-  assert.equal(result.taggedSpend, 600);
-  assert.equal(result.unallocatedSpend, 25);
   assert.equal(result.totalRecords, 6);
-  assert.equal(result.taggedCoveragePercent, 96);
+  assert.deepEqual(result.byCurrency.map((item) => [item.currency, item.totalSpend, item.taggedSpend, item.unallocatedSpend, item.coveragePercent]), [
+    ["INR", 500, 500, 0, 100],
+    ["USD", 125, 100, 25, 80]
+  ]);
   assert.deepEqual(result.groups.map((item) => item.currency), ["INR", "USD", "USD"]);
 });
 
 test("returns zero coverage for an empty result", () => {
   const result = summarizeAllocationRows([]);
-  assert.equal(result.totalSpend, 0);
-  assert.equal(result.taggedCoveragePercent, 0);
+  assert.equal(result.totalRecords, 0);
+  assert.deepEqual(result.byCurrency, []);
 });
