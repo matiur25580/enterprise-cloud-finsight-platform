@@ -5,7 +5,7 @@ import { hashRecoveryCode } from "../src/lib/mfa-crypto";
 
 const prisma = new PrismaClient();
 
-testCase("PostgreSQL enforces single-use recovery codes and protects concurrent MFA re-enrollment", async () => {
+testCase("PostgreSQL enforces single-use recovery codes and protects concurrent MFA re-enrollment", { timeout: 30_000 }, async () => {
   const userId = `mfa-integration-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const originalEnabledAt = new Date("2026-01-01T00:00:00.000Z");
   const originalSecret = "integration-encrypted-secret-v1";
@@ -79,7 +79,7 @@ testCase("PostgreSQL enforces single-use recovery codes and protects concurrent 
   } finally {
     await prisma.user.deleteMany({ where: { id: userId } });
   }
-}, { timeout: 30_000 });
+});
 
 testCase("disconnect Prisma integration client", async () => {
   await prisma.$disconnect();
