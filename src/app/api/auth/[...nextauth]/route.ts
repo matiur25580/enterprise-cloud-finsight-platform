@@ -1,5 +1,5 @@
 import { handlers } from "@/auth";
-import { getClientAddress, consumeLoginRateLimit } from "@/lib/rate-limit";
+import { getClientAddress, consumeLoginRateLimit, consumeLoginAccountRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = handlers.GET;
@@ -35,6 +35,28 @@ export async function POST(request: NextRequest) {
           }
         }
       );
+    }
+
+    const form = new URLSearchParams(await request.clone().text());
+    const accountIdentifier = form.get("email")?.trim();
+    if (accountIdentifier && accountIdentifier.length <= 254) {
+      const accountDecision = await consumeLoginAccountRateLimit(accountIdentifier);
+      if (!accountDecision.allowed) {
+        const retryAfter = Math.max(1, Math.ceil((accountDecision.resetAt.getTime() - Date.now()) / 1000));
+        return NextResponse.json(
+          { error: "Too many login attempts for this account. Please wait before trying again." },
+          {
+            status: 429,
+            headers: {
+              "Cache-Control": "no-store",
+              "Retry-After": String(retryAfter),
+              "X-RateLimit-Limit": String(accountDecision.limit),
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": String(Math.ceil(accountDecision.resetAt.getTime() / 1000))
+            }
+          }
+        );
+      }
     }
 
     return handlers.POST(request);

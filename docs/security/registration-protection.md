@@ -17,3 +17,8 @@ Responses:
 The endpoint fails closed if it cannot enforce the rate limit. Production deployments must configure a strong `AUTH_SECRET` (at least 32 characters) and ensure the reverse proxy overwrites forwarded client-address headers; otherwise clients could spoof the address used for the quota. The same persistent rate-limit table is shared with existing authentication controls.
 
 The request-size cap is intentionally larger than the maximum accepted registration fields while keeping untrusted payload buffering bounded.
+
+
+## Login abuse protection
+
+Credential sign-in requests are limited independently by client network address and by the normalized account identifier supplied with the request. Account identifiers are trimmed and lowercased before deriving a keyed HMAC bucket identifier; raw email addresses are not written to the rate-limit table. Both quotas use the shared database-backed fixed-window counter and fail closed if the rate-limit store is unavailable. The account quota complements, rather than replaces, network-based throttling.

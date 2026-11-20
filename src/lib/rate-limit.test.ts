@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getRateLimitDecision, getRateLimitSecret, rateLimitResponse } from "./rate-limit";
+import { getRateLimitDecision, getRateLimitSecret, normalizeLoginIdentifier, rateLimitResponse } from "./rate-limit";
 
 test("allows requests up to the configured limit", () => {
   const startedAt = new Date("2026-11-20T10:00:00.000Z");
@@ -85,4 +85,9 @@ test("registration policy permits five account creations per hour and blocks the
   assert.equal(allowed.resetAt.toISOString(), "2026-11-20T11:00:00.000Z");
   assert.equal(blocked.allowed, false);
   assert.equal(blocked.remaining, 0);
+});
+
+test("normalizes login account identifiers without changing case-insensitive identity", () => {
+  assert.equal(normalizeLoginIdentifier("  Alice@Example.COM "), "alice@example.com");
+  assert.equal(normalizeLoginIdentifier("alice@example.com"), "alice@example.com");
 });

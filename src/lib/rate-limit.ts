@@ -111,6 +111,22 @@ export async function consumeLoginRateLimit(
   );
 }
 
+/**
+ * Applies the same bounded login quota to a normalized account identifier.
+ * The email address is used only as HMAC input; only the keyed digest is stored.
+ */
+export function normalizeLoginIdentifier(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export async function consumeLoginAccountRateLimit(email: string): Promise<RateLimitDecision> {
+  const normalized = normalizeLoginIdentifier(email);
+  if (!normalized || normalized.length > 254) {
+    throw new Error("Invalid login account identifier");
+  }
+  return consumeLoginRateLimit(`account:${normalized}`, "credentials");
+}
+
 export function getClientAddress(request: Request): string | null {
   const realIp = request.headers.get("x-real-ip")?.trim();
   if (realIp) return realIp;
