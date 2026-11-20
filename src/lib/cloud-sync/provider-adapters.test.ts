@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ProviderCredentialConfigurationError, validateProviderSecret } from "./provider-adapters";
+import { validateProviderSecret } from "./provider-adapters";
+import { ProviderCredentialConfigurationError } from "./errors";
 
 test("accepts an AWS role scoped to the registered account", () => {
   assert.doesNotThrow(() => validateProviderSecret("AWS", "123456789012", { roleArn: "arn:aws:iam::123456789012:role/FinSightCostReader", externalId: "finsight-tenant-unique" }));
