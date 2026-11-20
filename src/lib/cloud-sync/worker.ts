@@ -28,6 +28,20 @@ async function notifyTerminalOutcome(job: ClaimedJob, status: "FAILED" | "BLOCKE
   }
 }
 
+
+async function writeSyncAudit(job: ClaimedJob, action: string, metadata: Record<string, string | number | boolean | null>): Promise<void> {
+  try {
+    await withOrganization(prisma, job.organization_id, (tx) => tx.auditLog.create({
+      data: {
+        organizationId: job.organization_id, actorUserId: null, action,
+        entityType: "CloudSyncJob", entityId: job.id, metadata
+      }
+    }));
+  } catch {
+    // Audit instrumentation must not interrupt provider execution or job recovery.
+  }
+}
+
 export async function claimNextCloudSyncJob(): Promise<ClaimedJob | null> {
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`
@@ -57,6 +71,7 @@ export async function claimNextCloudSyncJob(): Promise<ClaimedJob | null> {
 
 export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
   const attemptedAt = new Date();
+  await writeSyncAudit(job, "CLOUD_SYNC_STARTED", { attempt: job.attempt_count, maxAttempts: job.max_attempts });
   try {
     const account = await withOrganization(prisma, job.organization_id, (tx) => tx.cloudAccount.findFirst({
       where: { id: job.cloud_account_id, organizationId: job.organization_id },
@@ -91,6 +106,12 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
         }
       });
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncedAt: completelyRejected ? undefined : new Date(), lastSyncAttemptAt: new Date() } });
+      await tx.auditLog.create({ data: {
+        organizationId: job.organization_id, actorUserId: null,
+        action: completelyRejected ? "CLOUD_SYNC_FAILED" : "CLOUD_SYNC_SUCCEEDED",
+        entityType: "CloudSyncJob", entityId: job.id,
+        metadata: { attempt: job.attempt_count, totalRows: imported.totalRows, importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows, errorCode: completelyRejected ? "BILLING_ROWS_REJECTED" : null }
+      } });
     });
     if (completelyRejected) {
       await notifyTerminalOutcome(job, "FAILED", { errorCode: "BILLING_ROWS_REJECTED", importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows });
@@ -113,6 +134,12 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
         }
       });
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncAttemptAt: new Date() } });
+      if (blocked || !retry) await tx.auditLog.create({ data: {
+        organizationId: job.organization_id, actorUserId: null,
+        action: blocked ? "CLOUD_SYNC_BLOCKED" : "CLOUD_SYNC_FAILED",
+        entityType: "CloudSyncJob", entityId: job.id,
+        metadata: { attempt: job.attempt_count, maxAttempts: job.max_attempts, errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED" }
+      } });
     });
     if (blocked || !retry) {
       await notifyTerminalOutcome(job, blocked ? "BLOCKED" : "FAILED", { errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED" });
