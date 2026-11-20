@@ -33,7 +33,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   const intelligence = await getCostIntelligence(organizationId);
   const candidates: Candidate[] = [
     ...intelligence.optimizationRecommendations.map((item) => ({
-      signalKey: "SERVICE_SPEND:" + item.service + ":" + item.currency,
+      signalKey: "SERVICE_SPEND:" + new Date(intelligence.generatedAt).toISOString().slice(0, 7) + ":" + item.service + ":" + item.currency,
       title: "Review optimization for " + item.service,
       description: "This service has " + item.currency + " " + item.monthToDateSpend.toFixed(2) +
         " in month-to-date spend. Review utilization, idle resources, commitments and sizing opportunities. " +
@@ -69,7 +69,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
       return evidence && typeof evidence === "object" && !Array.isArray(evidence) &&
         typeof evidence.signalKey === "string" ? evidence.signalKey : null;
     }).filter((key): key is string => key !== null));
-    const created = [];
+    const created: { id: string; title: string; currency: string }[] = [];
     let skipped = 0;
     for (const candidate of candidates) {
       if (known.has(candidate.signalKey)) { skipped += 1; continue; }
