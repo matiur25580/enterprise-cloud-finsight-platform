@@ -7,7 +7,6 @@ const original = {
   address: process.env.VAULT_ADDR,
   token: process.env.VAULT_TOKEN,
   namespace: process.env.VAULT_NAMESPACE,
-  nodeEnv: process.env.NODE_ENV
 };
 
 test("reads a KV v2 secret using a worker-only token and namespace", async () => {
@@ -50,5 +49,4 @@ test.after(() => {
   if (original.address === undefined) delete process.env.VAULT_ADDR; else process.env.VAULT_ADDR = original.address;
   if (original.token === undefined) delete process.env.VAULT_TOKEN; else process.env.VAULT_TOKEN = original.token;
   if (original.namespace === undefined) delete process.env.VAULT_NAMESPACE; else process.env.VAULT_NAMESPACE = original.namespace;
-  if (original.nodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = original.nodeEnv;
 });
