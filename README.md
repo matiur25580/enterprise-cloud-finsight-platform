@@ -4,7 +4,7 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, production cloud integrations, and automated provider billing sync remain outstanding. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, and external secret-manager references without accepting raw credentials.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, live provider API authorization, and automated provider billing sync remain outstanding. Provider-native AWS CUR, Azure Cost Management, and GCP detailed billing CSV exports can now be normalized and imported through the workspace. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, and external secret-manager references without accepting raw credentials.
 
 ## Implemented foundation
 
@@ -12,7 +12,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - Responsive organization dashboard with live tenant-scoped cost queries and explicit empty states (no fabricated spend values).
 - PostgreSQL schema for organizations, users, memberships, cloud accounts, cost records, budgets, audit logs, and recommendations.
 - Organization-scoped PostgreSQL Row-Level Security policies and a transaction helper for tenant context.
-- CSV billing parser with strict validation, row-level error capture, stable fingerprints, duplicate-safe inserts, and import audit history.
+- CSV billing parser with strict validation, row-level error capture, stable fingerprints, duplicate-safe inserts, and import audit history.\n- Provider-native export adapters for AWS Cost and Usage Reports, Azure Cost Management exports, and GCP detailed billing exports; adapters normalize source columns before using the common validated import pipeline.
 - Auth.js credentials authentication, bcrypt password hashing, organization bootstrap, JWT sessions, and server-side RBAC guards.
 - Live cost analytics: 7/30/90-day and month-to-date windows, prior-period comparison, daily and six-month monthly trends, provider/account and service breakdowns, month-end run-rate estimates, and active budget utilization. Currency totals are never combined across currencies.
 - Cost intelligence: 14-calendar-day service baselines with a minimum of 7 observations, 2x/3σ spike thresholds, configured budget threshold alerts, and ranked optimization scenarios using an explicitly disclosed illustrative 5% reduction assumption.
@@ -65,7 +65,7 @@ Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
 Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
 ```
 
-The authenticated workspace provides CSV upload and import history. Cloud account inventory is managed separately under each organization; new accounts start paused. Secret references are pointers only—provider credentials are not stored or fetched by this release.
+The authenticated workspace provides normalized CSV upload and provider-native export import. Choose the provider-native option for AWS CUR, Azure Cost Management exports, or GCP detailed billing exports. Cloud account inventory is managed separately under each organization. This is file-based ingestion, not a live provider API connection. Secret references are pointers only—provider credentials are not stored or fetched by this release.
 
 ## Local development
 
@@ -97,7 +97,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 3 foundation — CSV parsing/validation, import history, row issues, idempotent fingerprints, and audit events. Authenticated upload UI/API remains outstanding.
 - [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI and exports remain outstanding.
 - [x] Phase 5 foundation — Historical service-spend anomaly signals, budget threshold alerts, and explainable optimization scenarios. Persistent alert delivery, forecasting confidence ranges, and realized-savings tracking remain planned.
-- [x] Phase 6 foundation — AWS/Azure/GCP account inventory, lifecycle management, audit events, and secret-manager reference metadata. Live provider authorization and billing sync remain planned.
+- [x] Phase 6 foundation — AWS/Azure/GCP account inventory, lifecycle management, audit events, and secret-manager reference metadata.\n- [x] Phase 7 foundation — AWS CUR, Azure Cost Management, and GCP detailed billing CSV normalization adapters with a shared validated import path. Live provider authorization and scheduled billing sync remain planned.
 - [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
 
 ## Security
