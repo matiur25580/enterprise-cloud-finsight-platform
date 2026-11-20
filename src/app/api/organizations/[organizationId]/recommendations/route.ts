@@ -25,7 +25,7 @@ export async function GET(_request: Request,{params}:{params:Promise<{organizati
   const {organizationId}=await params; const membership=await getMembership(organizationId,session.user.id);
   if(!membership || !hasPermission(membership.role,"billing:read")) return NextResponse.json({error:"Organization access denied."},{status:403});
   const recommendations=await withOrganization(prisma,organizationId,tx=>tx.recommendation.findMany({where:{organizationId},orderBy:[{updatedAt:"desc"},{createdAt:"desc"}],take:200,include:{impacts:{orderBy:{createdAt:"desc"},take:10}}}));
-  return NextResponse.json({recommendations:recommendations.map(r=>({...r,estimatedMonthlySavings:Number(r.estimatedMonthlySavings)}))});
+  return NextResponse.json({recommendations:recommendations.map(r=>({...r,estimatedMonthlySavings:Number(r.estimatedMonthlySavings),impacts:r.impacts.map(i=>({...i,baselineSpend:Number(i.baselineSpend),observedSpend:Number(i.observedSpend),realizedSavings:Number(i.realizedSavings)}))}))});
 }
 export async function POST(request:Request,{params}:{params:Promise<{organizationId:string}>}) {
   const session=await auth(); if(!session?.user?.id) return NextResponse.json({error:"Authentication required."},{status:401});
