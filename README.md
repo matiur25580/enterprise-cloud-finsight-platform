@@ -15,6 +15,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - CSV billing parser with strict validation, row-level error capture, stable fingerprints, duplicate-safe inserts, and import audit history.
 - Provider-native export adapters for AWS Cost and Usage Reports, Azure Cost Management exports, and GCP detailed billing exports; adapters normalize source columns before using the common validated import pipeline.
 - Auth.js credentials authentication, bcrypt password hashing, organization bootstrap, JWT sessions, and server-side RBAC guards.
+- Enterprise tag policy enforcement: organization-scoped mandatory-tag and allowed-value policies, audited policy lifecycle, and currency-isolated 30-day violation exposure reports.
 - Tag governance scorecard: 30-day, spend-weighted coverage across team, department, project, environment, and cost-center tags; currency-isolated unallocated-spend remediation queue with transparent limits (presence checks, not approved-value compliance).
 - Live cost analytics: 7/30/90-day and month-to-date windows, prior-period comparison, daily and six-month monthly trends, provider/account and service breakdowns, month-end run-rate estimates, and active budget utilization. Currency totals are never combined across currencies.
 - Cost intelligence: 14-calendar-day service baselines with a minimum of 7 observations, 2x/3σ spike thresholds, configured budget threshold alerts, and ranked optimization scenarios using an explicitly disclosed illustrative 5% reduction assumption.
