@@ -17,7 +17,8 @@ const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 function dateWindow() {
   const end = new Date(); end.setUTCHours(0, 0, 0, 0);
   const start = new Date(end); start.setUTCDate(start.getUTCDate() - 30);
-  return { start: isoDate(start), end: isoDate(end) };
+  const azureEnd = new Date(end); azureEnd.setUTCDate(azureEnd.getUTCDate() - 1);
+  return { start: isoDate(start), end: isoDate(end), azureEnd: isoDate(azureEnd) };
 }
 function requiredString(value: unknown, name: string): string {
   if (typeof value !== "string" || !value.trim()) throw new ProviderCredentialConfigurationError("The provider secret is missing " + name + ".");
@@ -51,12 +52,13 @@ async function resolveProviderSecret(input: { credentialRef: string | null; prov
 export function validateProviderSecret(provider: CloudProvider, externalAccountId: string, secret: Secret): void {
   if (provider === "AWS") {
     const roleArn = requiredString(secret.roleArn, "roleArn");
-    if (!/^arn:aws:iam::\d{12}:role\\/[A-Za-z0-9_+=,.@/-]+$/.test(roleArn) || roleArn.split(":")[4] !== externalAccountId) {
+    if (!/^arn:aws:iam::\d{12}:role\/[A-Za-z0-9_+=,.@/-]+$/.test(roleArn) || roleArn.split(":")[4] !== externalAccountId) {
       throw new ProviderCredentialConfigurationError("The AWS role ARN must belong to the registered 12-digit account ID.");
     }
     return;
   }
   if (provider === "AZURE") {
+    if (!/^[0-9a-f-]{36}$/i.test(externalAccountId)) throw new ProviderCredentialConfigurationError("The Azure cloud account ID must be a subscription GUID.");
     requiredString(secret.tenantId, "tenantId"); requiredString(secret.clientId, "clientId"); requiredString(secret.clientSecret, "clientSecret");
     return;
   }
@@ -66,6 +68,7 @@ export function validateProviderSecret(provider: CloudProvider, externalAccountI
   if (!credentials || typeof credentials !== "object" || !["service_account", "external_account"].includes(String(credentials.type))) {
     throw new ProviderCredentialConfigurationError("GCP credentials must be a service-account or external-account credential configuration.");
   }
+  if (!/^[a-z][a-z0-9-]{4,28}$/.test(externalAccountId)) throw new ProviderCredentialConfigurationError("The GCP cloud account ID must be a Google Cloud project ID.");
   const table = requiredString(secret.billingExportTable, "billingExportTable");
   const match = table.match(/^([a-z][a-z0-9-]{4,28})\.([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z0-9_]+)$/);
   if (!match || match[1] !== externalAccountId) throw new ProviderCredentialConfigurationError("GCP billingExportTable must be a fully qualified table in the registered project.");
@@ -100,7 +103,7 @@ async function syncAws(externalAccountId: string, secret: Secret): Promise<Billi
   return rows;
 }
 
-async function syncAzure(externalAccountId: string, secret: Secret): Promise<BillingRow[]> {
+async function syncAzure(externalAccountId: string, secret: Secret, defaultCurrency: string): Promise<BillingRow[]> {
   const tenantId = requiredString(secret.tenantId, "tenantId");
   const clientId = requiredString(secret.clientId, "clientId");
   const clientSecret = requiredString(secret.clientSecret, "clientSecret");
@@ -115,7 +118,7 @@ async function syncAzure(externalAccountId: string, secret: Secret): Promise<Bil
   const window = dateWindow();
   const endpoint = "https://management.azure.com/subscriptions/" + encodeURIComponent(externalAccountId) + "/providers/Microsoft.CostManagement/query?api-version=2023-11-01";
   const query = {
-    type: "ActualCost", timeframe: "Custom", timePeriod: { from: window.start, to: window.end },
+    type: "ActualCost", timeframe: "Custom", timePeriod: { from: window.start, to: window.azureEnd },
     dataset: { granularity: "Daily", aggregation: { totalCost: { name: "PreTaxCost", function: "Sum" } }, grouping: [{ type: "Dimension", name: "ServiceName" }] }
   };
   const rows: BillingRow[] = [];
@@ -135,7 +138,7 @@ async function syncAzure(externalAccountId: string, secret: Secret): Promise<Bil
         if (indexes.amount >= 0 && indexes.date >= 0 && indexes.service >= 0 && typeof amount === "number" && typeof date === "number" && typeof service === "string") {
           const dateText = String(date);
           const usageDate = dateText.length === 8 ? dateText.slice(0, 4) + "-" + dateText.slice(4, 6) + "-" + dateText.slice(6, 8) : dateText;
-          rows.push({ service, amount: String(amount), currency: typeof currency === "string" ? currency : "USD", usageDate });
+          rows.push({ service, amount: String(amount), currency: typeof currency === "string" ? currency : defaultCurrency, usageDate });
         }
       }
       nextUrl = payload.properties?.nextLink;
@@ -192,13 +195,13 @@ async function syncGcp(externalAccountId: string, secret: Secret): Promise<Billi
 
 /** Fetches daily read-only costs for the previous 30 complete UTC days. */
 export async function executeProviderBillingSync(input: {
-  provider: CloudProvider; externalAccountId: string; organizationId: string; cloudAccountId: string; credentialRef: string | null;
+  provider: CloudProvider; externalAccountId: string; organizationId: string; cloudAccountId: string; credentialRef: string | null; defaultCurrency?: string;
 }): Promise<{ csv: string; totalRows: number }> {
   const secret = await resolveProviderSecret(input);
   validateProviderSecret(input.provider, input.externalAccountId, secret);
   let rows: BillingRow[];
   if (input.provider === "AWS") rows = await syncAws(input.externalAccountId, secret);
-  else if (input.provider === "AZURE") rows = await syncAzure(input.externalAccountId, secret);
+  else if (input.provider === "AZURE") rows = await syncAzure(input.externalAccountId, secret, input.defaultCurrency ?? "USD");
   else rows = await syncGcp(input.externalAccountId, secret);
   if (!rows.length) throw new ProviderApiError("The provider returned no daily billing rows for the previous 30 complete UTC days.");
   return rowsToCsv(rows);
