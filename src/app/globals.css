@@ -429,3 +429,9 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
 .budget-alert-status.delivered { color: #27856f; background: #edf8f3; }
 .budget-alert-status.failed, .budget-alert-status.partial { color: #b64b58; background: #fff0f1; }
 .budget-alert-status.pending, .budget-alert-status.not_configured { color: #9a742d; background: #fff8e9; }
+
+
+.budget-alert-retry { display: grid; gap: 4px; min-width: 104px; }
+.budget-alert-retry button { border: 1px solid #dcd8fa; border-radius: 6px; padding: 7px 9px; color: #6658cf; background: #f7f6ff; font-size: 9px; font-weight: 650; cursor: pointer; }
+.budget-alert-retry button:disabled { opacity: .55; cursor: wait; }
+.budget-alert-retry small { color: #85869a; font-size: 9px; white-space: normal; }
