@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
 import { requireOrganizationPermission } from "@/lib/auth-guards";
-import BillingUpload from "./billing-upload";
+import BillingUpload from "../billing-upload";
 
 export default async function BillingImportPage({ params }: { params: Promise<{ organizationId: string }> }) {
   const { organizationId } = await params;
