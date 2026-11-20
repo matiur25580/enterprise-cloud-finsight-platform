@@ -26,7 +26,9 @@ Each recovery code is single-use. If codes are lost or exposed, sign in with an 
 - TOTP follows RFC 6238: SHA-1, six digits, 30-second period, and a one-step clock-skew tolerance.
 - TOTP secrets are encrypted at rest with AES-256-GCM. The encryption key is derived from `AUTH_SECRET`; keep this secret stable across deployments and backups.
 - Recovery codes contain 64 bits of random entropy. Only SHA-256 hashes are stored.
+- TOTP time steps are stored per user and consumed with a conditional atomic database update. A six-digit code can be accepted only once, including under concurrent sign-in attempts.
 - Recovery-code consumption is an atomic database update, preventing the same code from being used twice concurrently.
+- MFA enrollment records the confirmation code's time step, preventing that same code from immediately being reused for sign-in.
 - Enrollment, confirmation, rotation, and disable operations require password reauthentication.
 - Existing accounts are not forced to enable MFA. Email verification remains a separate requirement for new registrations.
 

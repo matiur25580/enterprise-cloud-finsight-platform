@@ -1,13 +1,14 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { decryptTotpSecret, verifyTotp, hashRecoveryCode } from "@/lib/mfa-crypto";
+import { decryptTotpSecret, getMatchingTotpTimeStep, hashRecoveryCode } from "@/lib/mfa-crypto";
 
 export {
   createTotpSecret,
   encryptTotpSecret,
   decryptTotpSecret,
   verifyTotp,
+  getMatchingTotpTimeStep,
   createRecoveryCodes,
   hashRecoveryCode,
   createTotpUri
@@ -24,7 +25,20 @@ export async function verifyAndConsumeMfaFactor(
   } catch {
     return false;
   }
-  if (verifyTotp(secret, candidate)) return true;
+  const matchedTimeStep = getMatchingTotpTimeStep(secret, candidate);
+  if (matchedTimeStep !== null) {
+    const consumed = await prisma.user.updateMany({
+      where: {
+        id: userId,
+        OR: [
+          { mfaLastUsedTimeStep: null },
+          { mfaLastUsedTimeStep: { lt: matchedTimeStep } }
+        ]
+      },
+      data: { mfaLastUsedTimeStep: matchedTimeStep }
+    });
+    return consumed.count === 1;
+  }
 
   if (!/^[A-Fa-f0-9- ]{16,24}$/.test(candidate)) return false;
   const codeHash = hashRecoveryCode(candidate);

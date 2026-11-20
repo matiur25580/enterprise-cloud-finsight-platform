@@ -3,7 +3,7 @@ import { z } from "zod";
 import { compare } from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { createRecoveryCodes, decryptTotpSecret, hashRecoveryCode, verifyTotp } from "@/lib/mfa";
+import { createRecoveryCodes, decryptTotpSecret, getMatchingTotpTimeStep, hashRecoveryCode } from "@/lib/mfa";
 import { readLimitedJson } from "@/lib/request-body";
 import { enforceMfaRateLimit } from "@/lib/mfa-rate-limit";
 
@@ -36,21 +36,21 @@ export async function POST(request: Request) {
   if (user.mfaEnabledAt) return NextResponse.json({ error: "MFA is already enabled." }, { status: 409 });
   if (!user.mfaSecretEncrypted) return NextResponse.json({ error: "Start MFA setup first." }, { status: 409 });
 
-  let valid = false;
+  let matchedTimeStep: number | null = null;
   try {
-    valid = verifyTotp(decryptTotpSecret(user.mfaSecretEncrypted), parsed.data.code);
+    matchedTimeStep = getMatchingTotpTimeStep(decryptTotpSecret(user.mfaSecretEncrypted), parsed.data.code);
   } catch {
-    valid = false;
+    matchedTimeStep = null;
   }
-  if (!valid) return NextResponse.json({ error: "Authenticator code is incorrect or expired." }, { status: 400 });
+  if (matchedTimeStep === null) return NextResponse.json({ error: "Authenticator code is incorrect or expired." }, { status: 400 });
 
   const codes = createRecoveryCodes();
   const now = new Date();
   try {
     await prisma.$transaction(async (tx) => {
       const updated = await tx.user.updateMany({
-        where: { id: userId, mfaEnabledAt: null, mfaSecretEncrypted: user.mfaSecretEncrypted },
-        data: { mfaEnabledAt: now }
+        where: { id: userId, mfaEnabledAt: null, mfaSecretEncrypted: user.mfaSecretEncrypted, mfaLastUsedTimeStep: null },
+        data: { mfaEnabledAt: now, mfaLastUsedTimeStep: matchedTimeStep }
       });
       if (updated.count !== 1) throw new Error("MFA setup changed concurrently");
       await tx.mfaRecoveryCode.deleteMany({ where: { userId } });

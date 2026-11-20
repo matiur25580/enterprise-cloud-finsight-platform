@@ -84,16 +84,25 @@ function hotp(secret: string, counter: number): string {
   return String(binary % (10 ** TOTP_DIGITS)).padStart(TOTP_DIGITS, "0");
 }
 
-export function verifyTotp(secret: string, candidate: string, now = Date.now()): boolean {
-  if (!/^\d{6}$/.test(candidate)) return false;
+export function getMatchingTotpTimeStep(secret: string, candidate: string, now = Date.now()): number | null {
+  if (!/^\d{6}$/.test(candidate)) return null;
   const counter = Math.floor(now / 1000 / TOTP_PERIOD_SECONDS);
+  let matchedCounter: number | null = null;
   for (let offset = -TOTP_WINDOW; offset <= TOTP_WINDOW; offset += 1) {
-    const expected = hotp(secret, counter + offset);
+    const candidateCounter = counter + offset;
+    if (candidateCounter < 0) continue;
+    const expected = hotp(secret, candidateCounter);
     const left = Buffer.from(expected);
     const right = Buffer.from(candidate);
-    if (left.length === right.length && timingSafeEqual(left, right)) return true;
+    if (left.length === right.length && timingSafeEqual(left, right)) {
+      matchedCounter = matchedCounter === null ? candidateCounter : Math.max(matchedCounter, candidateCounter);
+    }
   }
-  return false;
+  return matchedCounter;
+}
+
+export function verifyTotp(secret: string, candidate: string, now = Date.now()): boolean {
+  return getMatchingTotpTimeStep(secret, candidate, now) !== null;
 }
 
 export function createRecoveryCodes(count = 10): string[] {

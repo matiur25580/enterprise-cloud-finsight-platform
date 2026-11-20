@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: userId },
-      data: { mfaEnabledAt: null, mfaSecretEncrypted: null }
+      data: { mfaEnabledAt: null, mfaSecretEncrypted: null, mfaLastUsedTimeStep: null }
     });
     await tx.mfaRecoveryCode.deleteMany({ where: { userId } });
   });

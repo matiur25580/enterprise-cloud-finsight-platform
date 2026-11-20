@@ -94,6 +94,7 @@ model User {
   mfaRecoveryCodes MfaRecoveryCode[]
   mfaSecretEncrypted String? @map("mfa_secret_encrypted") @db.Text
   mfaEnabledAt DateTime? @map("mfa_enabled_at") @db.Timestamptz(6)
+  mfaLastUsedTimeStep Int? @map("mfa_last_used_time_step")
   auditLogs     AuditLog[]
   uploadedImports ImportBatch[]
   sentInvitations OrganizationInvitation[] @relation("InvitationSender")

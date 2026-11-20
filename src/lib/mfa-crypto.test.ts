@@ -6,6 +6,7 @@ import {
   decryptTotpSecret,
   encryptTotpSecret,
   hashRecoveryCode,
+  getMatchingTotpTimeStep,
   verifyTotp
 } from "@/lib/mfa-crypto";
 
@@ -15,6 +16,9 @@ testCase("TOTP verifies RFC 6238 SHA-1 six-digit test vector", () => {
   assert.equal(verifyTotp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287082", 59_000), true);
   assert.equal(verifyTotp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287083", 59_000), false);
   assert.equal(verifyTotp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "12345", 59_000), false);
+  assert.equal(getMatchingTotpTimeStep("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287082", 59_000), 1);
+  assert.equal(getMatchingTotpTimeStep("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "123456", 59_000), null);
+  assert.equal(getMatchingTotpTimeStep("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287082", 89_000), 1);
 });
 
 testCase("TOTP secrets are random and AES-GCM encrypted at rest", () => {

@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const encrypted = encryptTotpSecret(secret);
   await prisma.user.update({
     where: { id: userId },
-    data: { mfaSecretEncrypted: encrypted }
+    data: { mfaSecretEncrypted: encrypted, mfaLastUsedTimeStep: null }
   });
 
   return NextResponse.json({
