@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -13,15 +13,21 @@ export default function LoginPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice] = useState(() => {
-    if (typeof window === "undefined") return "";
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
     const status = new URLSearchParams(window.location.search).get("verification");
-    if (status === "success") return "Your email is verified. You can now sign in.";
-    if (status === "expired") return "That verification link has expired. Request a new one below.";
-    if (status === "invalid") return "That verification link is invalid. Request a new one below.";
-    if (status === "unavailable") return "Verification could not be completed. Please try again.";
-    return "";
-  });
+    const notices: Record<string, string> = {
+      success: "Your email is verified. You can now sign in.",
+      expired: "That verification link has expired. Request a new one below.",
+      invalid: "That verification link is invalid. Request a new one below.",
+      unavailable: "Verification could not be completed. Please try again."
+    };
+    const message = status ? notices[status] : undefined;
+    if (!message) return;
+    const frame = window.requestAnimationFrame(() => setNotice(message));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
