@@ -1,10 +1,184 @@
+<div align="center">
+
 # FinSight
 
-**Enterprise Cloud FinOps & Cost Intelligence Platform**
+### Enterprise Cloud FinOps & Cost Intelligence Platform
 
-FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
+**Understand cloud spend. Govern budgets. Allocate ownership. Improve efficiency.**
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, provider credential rotation/verification, and production hardening remain outstanding. Read-only AWS Cost Explorer, Azure Cost Management, and GCP BigQuery billing adapters are implemented behind an external secret-resolver contract. A durable PostgreSQL-backed sync queue, scheduled account polling, retry handling, and a graceful-shutdown worker are implemented. Provider-native AWS CUR, Azure Cost Management, and GCP detailed billing CSV exports can now be normalized and imported through the workspace. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, external secret-manager references, manual sync queueing, and sync schedules without accepting raw credentials. The sync worker resolves per-account credentials from HashiCorp Vault KV v2 directly or from a custom external secret resolver, fetches the previous 30 complete UTC days, and sends normalized costs through the shared idempotent import pipeline. Jobs remain BLOCKED until the selected secret backend and account-specific secret reference are configured.
+A multi-tenant FinOps workspace for engineering, finance, and platform teams — bringing cloud cost analytics, budgeting, showback, optimization signals, governance, and security operations into one product.
+
+[Repository](https://github.com/matiur25580/enterprise-cloud-finsight-platform) · [Issues](https://github.com/matiur25580/enterprise-cloud-finsight-platform/issues) · [Pull requests](https://github.com/matiur25580/enterprise-cloud-finsight-platform/pulls)
+
+</div>
+
+---
+
+## Project at a glance
+
+| | |
+|---|---|
+| **Application** | Next.js App Router · React · TypeScript |
+| **Data platform** | PostgreSQL · Prisma · Row-Level Security |
+| **Identity & access** | Auth.js · bcrypt · organization RBAC |
+| **Cloud coverage** | AWS · Microsoft Azure · Google Cloud |
+| **Core workflows** | Cost analytics · budgets · forecasts · allocation · governance · security |
+| **Engineering quality** | ESLint · TypeScript · automated tests · GitHub Actions · CodeQL |
+
+> **Development status:** Active development. Core product workflows and the security foundation are implemented. Production provider credentials, external secret-backend configuration, email verification, MFA, and final deployment hardening require environment-specific setup and verification. This README distinguishes implemented application capabilities from operator configuration and future work.
+
+## Dashboard gallery
+
+The following 12 visuals are **illustrative dashboard concepts**, created to explain the product areas and intended information architecture. They are not screenshots of a running deployment and contain sample values, not customer or production data. Actual workspace views use organization-scoped records and explicit empty states.
+
+<table>
+<tr><td width="50%"><a href="docs/dashboard-previews/01-executive-overview.svg"><img src="docs/dashboard-previews/01-executive-overview.svg" alt="Executive overview dashboard preview" width="100%"/></a><br/><strong>01. Executive overview</strong><br/><sub>Leadership snapshot of cloud spend, reporting coverage, and operational status.</sub></td><td width="50%"><a href="docs/dashboard-previews/02-cost-analytics.svg"><img src="docs/dashboard-previews/02-cost-analytics.svg" alt="Cost analytics dashboard preview" width="100%"/></a><br/><strong>02. Cost analytics</strong><br/><sub>Spend trends and service-level cost analysis across the selected reporting window.</sub></td></tr>
+<tr><td width="50%"><a href="docs/dashboard-previews/03-budget-management.svg"><img src="docs/dashboard-previews/03-budget-management.svg" alt="Budget management dashboard preview" width="100%"/></a><br/><strong>03. Budget management</strong><br/><sub>Budget utilization and portfolio-level financial guardrails.</sub></td><td width="50%"><a href="docs/dashboard-previews/04-forecast-accuracy.svg"><img src="docs/dashboard-previews/04-forecast-accuracy.svg" alt="Forecast & accuracy dashboard preview" width="100%"/></a><br/><strong>04. Forecast & accuracy</strong><br/><sub>Month-end run-rate forecasting and forecast-versus-actual review.</sub></td></tr>
+<tr><td width="50%"><a href="docs/dashboard-previews/05-cost-allocation.svg"><img src="docs/dashboard-previews/05-cost-allocation.svg" alt="Cost allocation dashboard preview" width="100%"/></a><br/><strong>05. Cost allocation</strong><br/><sub>Team and business ownership views for cloud showback.</sub></td><td width="50%"><a href="docs/dashboard-previews/06-kubernetes-costs.svg"><img src="docs/dashboard-previews/06-kubernetes-costs.svg" alt="Kubernetes costs dashboard preview" width="100%"/></a><br/><strong>06. Kubernetes costs</strong><br/><sub>Container and namespace cost visibility for platform teams.</sub></td></tr>
+<tr><td width="50%"><a href="docs/dashboard-previews/07-cloud-accounts.svg"><img src="docs/dashboard-previews/07-cloud-accounts.svg" alt="Cloud accounts dashboard preview" width="100%"/></a><br/><strong>07. Cloud accounts</strong><br/><sub>AWS, Azure, and Google Cloud account inventory and status.</sub></td><td width="50%"><a href="docs/dashboard-previews/08-optimization-insights.svg"><img src="docs/dashboard-previews/08-optimization-insights.svg" alt="Optimization insights dashboard preview" width="100%"/></a><br/><strong>08. Optimization insights</strong><br/><sub>Ranked opportunities with transparent illustrative savings assumptions.</sub></td></tr>
+<tr><td width="50%"><a href="docs/dashboard-previews/09-tag-governance.svg"><img src="docs/dashboard-previews/09-tag-governance.svg" alt="Tag governance dashboard preview" width="100%"/></a><br/><strong>09. Tag governance</strong><br/><sub>Tag coverage and unallocated-spend governance signals.</sub></td><td width="50%"><a href="docs/dashboard-previews/10-executive-reporting.svg"><img src="docs/dashboard-previews/10-executive-reporting.svg" alt="Executive reporting dashboard preview" width="100%"/></a><br/><strong>10. Executive reporting</strong><br/><sub>Leadership reporting for cloud efficiency and financial performance.</sub></td></tr>
+<tr><td width="50%"><a href="docs/dashboard-previews/11-security-activity.svg"><img src="docs/dashboard-previews/11-security-activity.svg" alt="Security activity dashboard preview" width="100%"/></a><br/><strong>11. Security activity</strong><br/><sub>Tenant-scoped security events and abuse-signal monitoring.</sub></td><td width="50%"><a href="docs/dashboard-previews/12-incident-response.svg"><img src="docs/dashboard-previews/12-incident-response.svg" alt="Incident response dashboard preview" width="100%"/></a><br/><strong>12. Incident response</strong><br/><sub>Owner/Admin incident triage and lifecycle management.</sub></td></tr>
+</table>
+
+## What FinSight helps teams do
+
+1. **See cloud spend clearly** — analyze daily and monthly trends, compare periods, and break down costs by provider, account, and service.
+2. **Control budgets** — monitor utilization, threshold signals, forecasts, alert history, and forecast accuracy.
+3. **Allocate ownership** — support team, project, environment, cost-center, shared-cost, and Kubernetes cost views.
+4. **Find optimization opportunities** — review explainable cost signals, recommendation lifecycle, impact measurement, and savings realization.
+5. **Improve governance** — measure tag coverage, enforce tag policies, and identify unallocated spend.
+6. **Operate securely** — enforce tenant isolation, role-based access, audit trails, persistent rate limits, security events, and incident triage.
+7. **Connect cloud billing data** — import normalized CSV/provider exports or configure read-only cloud billing API sync through an isolated worker.
+
+## Product areas
+
+| Workspace | Purpose |
+|---|---|
+| Executive overview | Organization-level cost and FinOps snapshot |
+| Cost analytics & billing | Spend trends, comparisons, provider/service breakdowns |
+| Budgets & alerts | Budget ownership, thresholds, alert delivery, forecast review |
+| Cloud accounts & sync health | AWS/Azure/GCP inventory, sync schedules, job health |
+| Allocation & Kubernetes | Team showback, shared infrastructure, namespace costs |
+| Insights & recommendations | Anomaly signals, optimization opportunities, impact tracking |
+| Tag governance & policies | Coverage scorecards, policy enforcement, remediation queue |
+| Business metrics & revenue | Unit economics, revenue-to-cloud-spend efficiency |
+| Executive & savings reports | Leadership reporting and savings analysis |
+| Audit & security | Governance timeline, security activity, incident response |
+
+## Architecture and engineering highlights
+
+- **Tenant isolation:** organization-owned data is protected with PostgreSQL Row-Level Security and transaction-scoped tenant context.
+- **Server-side authorization:** verified memberships and role guards protect organization routes and administrative security workflows.
+- **Financial correctness:** decimal amounts, explicit currency separation, stable billing fingerprints, and idempotent ingestion prevent accidental duplicate spend and cross-currency aggregation.
+- **Resilient ingestion:** PostgreSQL-backed queue processing uses row locking, bounded retries, stale-lease recovery, and graceful worker shutdown.
+- **Secret separation:** cloud credentials are resolved by the background worker from Vault KV v2 or an external resolver; raw credentials are not stored in application tables or sent to browsers.
+- **Explainable intelligence:** anomaly thresholds and savings assumptions are disclosed; heuristic security signals are not presented as confirmed compromise.
+- **Auditable operations:** imports, cloud sync lifecycle, governance actions, security events, and incident transitions are attributable and recorded.
+
+## Technology stack
+
+| Layer | Technologies |
+|---|---|
+| Web application | Next.js 16, React 19, TypeScript |
+| UI | Tailwind CSS 4, Lucide |
+| Authentication | Auth.js, bcryptjs |
+| Data access | PostgreSQL, Prisma ORM |
+| Billing ingestion | csv-parse, provider-native normalizers |
+| Cloud integrations | AWS Cost Explorer, Azure Cost Management, GCP BigQuery |
+| Secret management | HashiCorp Vault KV v2 or custom HTTPS secret resolver |
+| Quality & security | ESLint, TypeScript, Node test runner, GitHub Actions, CodeQL |
+
+## Getting started
+
+### Prerequisites
+
+- Node.js **20.9+**
+- PostgreSQL database
+- Git
+
+### Local setup
+
+```bash
+git clone https://github.com/matiur25580/enterprise-cloud-finsight-platform.git
+cd enterprise-cloud-finsight-platform
+npm install
+cp .env.example .env
+```
+
+Set `DATABASE_URL` and a strong `AUTH_SECRET` in `.env`. Generate a secret with:
+
+```bash
+npx auth secret
+```
+
+Then initialize the application:
+
+```bash
+npm run db:generate
+npm run db:migrate
+npm run dev
+```
+
+Open `http://localhost:3000`, register an account, and complete the initial organization setup. The first organization member receives the OWNER role.
+
+For an already provisioned database, use `npm run db:deploy` instead of the development migration command.
+
+### Useful commands
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the local development server |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript checks |
+| `npm test` | Run unit and domain tests |
+| `npm run build` | Create a production build |
+| `npm run db:generate` | Generate Prisma Client |
+| `npm run db:migrate` | Apply development migrations |
+| `npm run db:deploy` | Apply committed migrations |
+| `npm run sync:worker` | Start the cloud billing sync worker |
+
+## Billing data ingestion
+
+FinSight supports validated CSV uploads, provider-native billing export normalization, and configured read-only API sync.
+
+**Generic CSV required columns:** `service`, `amount`, `currency`, and `usageDate` (`YYYY-MM-DD`). Optional columns include `externalId`, `region`, `usageType`, `resourceId`, and tags such as `tag:team` or `tag:environment`.
+
+```csv
+service,amount,currency,usageDate,region,externalId,tag:team
+Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
+Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
+```
+
+The parser enforces a 5 MB file limit and 20,000 data-row limit. Invalid rows are reported, duplicate-safe fingerprints are used, and imports are audited. A downloadable template is available at `/billing-import-template.csv`.
+
+## Security and operational boundaries
+
+- Never commit `.env`, API keys, cloud credentials, database URLs, or real customer billing exports.
+- The web application should use a restricted, non-superuser database role without `BYPASSRLS`; migrations should use a separate privileged role.
+- Configure `SYNC_WORKER_DATABASE_URL` only on the isolated background worker with narrowly scoped grants.
+- Configure Vault or the custom secret resolver on the worker only. Use read-only provider permissions, TLS, short-lived credentials, and audited secret access.
+- Production must use a strong `AUTH_SECRET` and a trusted reverse proxy that overwrites client-address forwarding headers.
+- Security activity and incident severity are heuristic triage signals, not proof of compromise or automated containment.
+- Email verification, MFA, provider credential rotation/verification, production secret setup, and deployment hardening remain environment/operator tasks.
+
+## Roadmap
+
+- [x] Multi-tenant application foundation and organization-scoped data access
+- [x] Billing CSV validation, provider export adapters, import history, and idempotent ingestion
+- [x] Cost analytics, period comparisons, budget utilization, and run-rate forecasting
+- [x] AWS/Azure/GCP account inventory and provider billing adapters
+- [x] PostgreSQL sync queue, scheduled polling, retries, and worker lifecycle
+- [x] Cost allocation, tag governance, recommendations, executive reporting, and business metrics foundations
+- [x] Persistent API rate limiting, security event monitoring, and incident triage
+- [ ] Email verification and multi-factor authentication
+- [ ] Production provider IAM, secret resolver, credential rotation, and end-to-end cloud sync verification
+- [ ] Deployment hardening, observability, and production runbooks
+
+## Repository documentation
+
+The detailed implementation notes below cover the data model, tenant context, worker provisioning, provider secret payloads, alert delivery, budget workflows, allocation, reporting, and security controls.
+
+---
 
 ## Implemented foundation
 
@@ -19,22 +193,10 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - Tag governance scorecard: 30-day, spend-weighted coverage across team, department, project, environment, and cost-center tags; currency-isolated unallocated-spend remediation queue with transparent limits (presence checks, not approved-value compliance).
 - Live cost analytics: 7/30/90-day and month-to-date windows, prior-period comparison, daily and six-month monthly trends, provider/account and service breakdowns, month-end run-rate estimates, and active budget utilization. Currency totals are never combined across currencies.
 - Cost intelligence: 14-calendar-day service baselines with a minimum of 7 observations, 2x/3σ spike thresholds, configured budget threshold alerts, and ranked optimization scenarios using an explicitly disclosed illustrative 5% reduction assumption.
+- PostgreSQL-backed login and authenticated API rate limiting with keyed client-address digests, security-event auditing, and tenant-scoped incident triage.
+- Admin security activity and incident-response workspaces with heuristic detection signals and explicit incident lifecycle transitions.
 - GitHub Actions workflow for linting, TypeScript checks, unit tests, and builds.
 - PostgreSQL-backed cloud sync queue with `FOR UPDATE SKIP LOCKED`, scheduled job creation, bounded retries, sync history, and a SIGTERM/SIGINT-aware worker (`npm run sync:worker`).
-
-## Planned capabilities
-
-| Area | Planned capability |
-|---|---|
-| Cost intelligence | Tenant-scoped spend trends, service breakdowns, period comparisons, provider allocation, and budget utilization |
-| Data ingestion | Validated CSV imports, provider-native export normalization, and read-only AWS/Azure/GCP billing API adapters |
-| Allocation | Team, project, environment, and tag-based cost allocation |
-| Anomaly detection | 14-day service baseline, minimum sample guard, 2x/3σ spike rule, and explainable alerts |
-| Forecasting | Historical trend forecasts with confidence ranges |
-| Optimization | Ranked service review opportunities with transparent, illustrative savings scenarios; actual savings tracking remains planned |
-| Budgets | Budget ownership, thresholds, and notifications |
-| Governance | Authentication, organizations, RBAC, cloud account lifecycle, audit events, and approvals |
-| Reporting | Exportable reports and documented APIs |
 
 ## Technology
 
@@ -103,7 +265,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI is implemented; advanced report exports remain planned.
 - [x] Phase 5 foundation — Historical service-spend anomaly signals, budget threshold alerts, and explainable optimization scenarios. Persistent alert delivery, forecasting confidence ranges, and realized-savings tracking remain planned.
 - [x] Phase 6 foundation — AWS/Azure/GCP account inventory, lifecycle management, audit events, and secret-manager reference metadata.
-- [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
+- [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, server-side RBAC guards, persistent login/API rate limiting, and security-event auditing. Email verification, MFA, and remaining production hardening remain outstanding.
 - [x] Phase 8 foundation — AWS CUR, Azure Cost Management, and GCP detailed billing CSV normalization adapters with a shared validated import path.
 - [x] Phase 9 foundation — PostgreSQL-backed manual/scheduled sync queue, tenant-scoped job history, worker claim/retry logic, and graceful shutdown.
 - [x] Phase 10 foundation — Read-only AWS Cost Explorer (STS AssumeRole), Azure Cost Management, and GCP BigQuery billing-export API adapters with external secret resolution and canonical idempotent ingestion. Production secret resolver deployment, provider IAM setup, credential rotation, and live end-to-end verification remain operator tasks.
@@ -116,9 +278,6 @@ Please do not report vulnerabilities in public issues with exploitable details. 
 
 Contributions should include a clear description, relevant tests, and documentation updates. Financial logic changes must include examples covering currency, rounding, billing periods, and edge cases.
 
-## License
-
-No license has been selected yet. Until a license is added, all rights are reserved by the copyright holder; do not assume the code is open for reuse.
 
 
 ### Authenticated CSV uploads
@@ -360,3 +519,6 @@ This is an abuse-signal dashboard, not a threat-intelligence verdict: a rate-lim
 
 The Owner/Admin-only security workspace at `/workspace/{organizationId}/security/incidents` lets administrators promote recorded API rate-limit threshold crossings into tenant-scoped incidents, review heuristic severity, and move incidents through OPEN, ACKNOWLEDGED, RESOLVED, and FALSE_POSITIVE states. Incident creation is idempotent per source event, status transitions are validated, and each create/update writes an organization audit event. Severity is a triage heuristic based on request-limit ratio and repeated crossings for the same route within a rolling hour; it is not a confirmed threat verdict. The incident table is protected by PostgreSQL Row-Level Security. Apply the new migration with `npm run db:deploy`, then regenerate the Prisma client with `npm run db:generate`. The workflow currently correlates only persisted authenticated API rate-limit events; it does not include credential-login telemetry, external threat-intelligence feeds, or automated containment.
 
+## License
+
+No license has been selected yet. Until a license is added, all rights are reserved by the copyright holder; do not assume the code is open for reuse.

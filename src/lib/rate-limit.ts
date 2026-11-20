@@ -3,6 +3,21 @@ import { prisma } from "@/lib/prisma";
 
 const LOGIN_WINDOW_SECONDS = 15 * 60;
 const LOGIN_MAX_ATTEMPTS = 10;
+const DEVELOPMENT_RATE_LIMIT_KEY = "finsight-development-rate-limit-key";
+
+export function getRateLimitSecret(environment: NodeJS.ProcessEnv = process.env): string {
+  const configuredSecret = environment.AUTH_SECRET ?? environment.NEXTAUTH_SECRET;
+  if (!configuredSecret) {
+    if (environment.NODE_ENV === "production") {
+      throw new Error("A strong AUTH_SECRET is required for production login rate limiting");
+    }
+    return DEVELOPMENT_RATE_LIMIT_KEY;
+  }
+  if (configuredSecret.length < 32) {
+    throw new Error("AUTH_SECRET must contain at least 32 characters for rate limiting");
+  }
+  return configuredSecret;
+}
 
 export type RateLimitDecision = {
   allowed: boolean;
@@ -31,10 +46,7 @@ export function getRateLimitDecision(
  * The reverse proxy must overwrite forwarded-address headers.
  */
 export async function consumeLoginRateLimit(clientAddress: string): Promise<RateLimitDecision> {
-  const secret =
-    process.env.AUTH_SECRET ??
-    process.env.NEXTAUTH_SECRET ??
-    "finsight-development-rate-limit-key";
+  const secret = getRateLimitSecret();
   const keyHash = createHmac("sha256", secret)
     .update(`login:credentials:${clientAddress}`)
     .digest("hex");

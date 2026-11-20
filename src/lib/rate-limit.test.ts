@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getRateLimitDecision, rateLimitResponse } from "./rate-limit";
+import { getRateLimitDecision, getRateLimitSecret, rateLimitResponse } from "./rate-limit";
 
 test("allows requests up to the configured limit", () => {
   const startedAt = new Date("2026-11-20T10:00:00.000Z");
@@ -40,4 +40,37 @@ test("returns a retryable 429 response when a request exceeds its limit", async 
 test("does not create a response for requests inside the limit", () => {
   const decision = getRateLimitDecision(4, 5, new Date("2026-11-20T10:00:00.000Z"), 900);
   assert.equal(rateLimitResponse(decision), null);
+});
+
+
+test("requires a configured strong secret in production", () => {
+  assert.throws(
+    () => getRateLimitSecret({ NODE_ENV: "production" }),
+    /strong AUTH_SECRET is required/
+  );
+});
+
+test("rejects weak configured secrets instead of silently using them", () => {
+  assert.throws(
+    () => getRateLimitSecret({ NODE_ENV: "production", AUTH_SECRET: "too-short" }),
+    /at least 32 characters/
+  );
+  assert.throws(
+    () => getRateLimitSecret({ NODE_ENV: "development", NEXTAUTH_SECRET: "weak" }),
+    /at least 32 characters/
+  );
+});
+
+test("prefers AUTH_SECRET and supports NEXTAUTH_SECRET fallback", () => {
+  const authSecret = "a".repeat(32);
+  const nextAuthSecret = "b".repeat(32);
+  assert.equal(getRateLimitSecret({ NODE_ENV: "test", AUTH_SECRET: authSecret, NEXTAUTH_SECRET: nextAuthSecret }), authSecret);
+  assert.equal(getRateLimitSecret({ NODE_ENV: "test", NEXTAUTH_SECRET: nextAuthSecret }), nextAuthSecret);
+});
+
+test("uses a development-only fallback when no secret is configured", () => {
+  assert.equal(
+    getRateLimitSecret({ NODE_ENV: "development" }),
+    "finsight-development-rate-limit-key"
+  );
 });

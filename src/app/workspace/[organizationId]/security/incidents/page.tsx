@@ -11,15 +11,20 @@ export default async function SecurityIncidentsPage({ params }: { params: Promis
   try { access = await requireOrganizationRole(organizationId, ["OWNER", "ADMIN"]); }
   catch (error) { if (error instanceof Error && error.message === "FORBIDDEN") notFound(); throw error; }
 
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const [incidents, signals] = await withOrganization(prisma, organizationId, async (tx) => Promise.all([
-    tx.securityIncident.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" }, take: 200 }),
-    tx.apiSecurityEvent.findMany({
-      where: { organizationId, createdAt: { gte: since } },
-      orderBy: { createdAt: "desc" }, take: 100,
-      select: { id: true, routeBucket: true, requestCount: true, requestLimit: true, createdAt: true }
-    })
-  ]));
+  const [incidents, signals] = await withOrganization(prisma, organizationId, async (tx) => {
+    // Use the database clock for a deterministic, consistent reporting window.
+    const [{ since }] = await tx.$queryRaw<Array<{ since: Date }>>`
+      SELECT CURRENT_TIMESTAMP - INTERVAL '30 days' AS since
+    `;
+    return Promise.all([
+      tx.securityIncident.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" }, take: 200 }),
+      tx.apiSecurityEvent.findMany({
+        where: { organizationId, createdAt: { gte: since } },
+        orderBy: { createdAt: "desc" }, take: 100,
+        select: { id: true, routeBucket: true, requestCount: true, requestLimit: true, createdAt: true }
+      })
+    ]);
+  });
 
   return <main className="analytics-shell">
     <header className="analytics-topbar"><Link className="analytics-brand" href="/workspace">fin<span>sight</span></Link><div className="analytics-user">{access.user.name ?? access.user.email} · {access.membership.role.replaceAll("_", " ")}</div></header>
