@@ -170,7 +170,7 @@ export async function consumeApiRateLimit(input: {
     Number(row.request_count), input.limit, row.window_started_at, input.windowSeconds
   );
 
-  if (!decision.allowed) {
+  if (!decision.allowed && Number(row.request_count) === input.limit + 1) {
     const { withOrganization } = await import("@/lib/tenant-context");
     await withOrganization(prisma, input.organizationId, (tx) =>
       tx.apiSecurityEvent.create({
