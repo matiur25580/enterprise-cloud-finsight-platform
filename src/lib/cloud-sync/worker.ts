@@ -44,7 +44,7 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
     const result = await executeProviderBillingSync({
       provider: account.provider, externalAccountId: account.externalAccountId,
       organizationId: job.organization_id, cloudAccountId: job.cloud_account_id,
-      credentialRef: account.credentialRef
+      credentialRef: account.credentialRef, defaultCurrency: account.currency
     });
     const imported = await importBillingCsv({
       organizationId: job.organization_id, cloudAccountId: job.cloud_account_id,
