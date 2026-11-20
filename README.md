@@ -4,23 +4,24 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. A browser upload flow, email verification, MFA, and production cloud integrations remain outstanding; dashboard figures are illustrative sample data.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Browser CSV upload, email verification, MFA, and production cloud integrations remain outstanding.
 
 ## Implemented foundation
 
 - Next.js App Router, React, TypeScript, Tailwind CSS, and ESLint scaffold.
-- Responsive dashboard shell with explicitly illustrative sample values.
+- Responsive organization dashboard with live tenant-scoped cost queries and explicit empty states (no fabricated spend values).
 - PostgreSQL schema for organizations, users, memberships, cloud accounts, cost records, budgets, audit logs, and recommendations.
 - Organization-scoped PostgreSQL Row-Level Security policies and a transaction helper for tenant context.
 - CSV billing parser with strict validation, row-level error capture, stable fingerprints, duplicate-safe inserts, and import audit history.
 - Auth.js credentials authentication, bcrypt password hashing, organization bootstrap, JWT sessions, and server-side RBAC guards.
+- Live cost analytics: 7/30/90-day and month-to-date windows, prior-period comparison, daily and six-month monthly trends, provider/account and service breakdowns, month-end run-rate estimates, and active budget utilization. Currency totals are never combined across currencies.
 - GitHub Actions workflow for linting, TypeScript checks, and builds.
 
 ## Planned capabilities
 
 | Area | Planned capability |
 |---|---|
-| Cost intelligence | Spend trends, service breakdowns, filters, and drill-downs |
+| Cost intelligence | Tenant-scoped spend trends, service breakdowns, period comparisons, provider allocation, and budget utilization |
 | Data ingestion | Validated CSV imports and cloud billing integrations |
 | Allocation | Team, project, environment, and tag-based cost allocation |
 | Anomaly detection | Configurable baselines, thresholds, and explainable alerts |
@@ -37,7 +38,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - **Data:** PostgreSQL and Prisma ORM
 - **Security:** Auth.js JWT sessions, password hashing, server-side organization RBAC, and PostgreSQL Row-Level Security
 - **Quality:** ESLint, TypeScript checks, GitHub Actions
-- **Future:** background jobs, provider billing ingestion, analytics, Vitest, Playwright, Docker, and deployment automation
+- **Future:** background jobs, provider billing ingestion, allocation dimensions, anomaly detection, Vitest, Playwright, Docker, and deployment automation
 
 ## Database model
 
@@ -93,7 +94,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 1 — Application foundation and CI workflow.
 - [x] Phase 2 foundation — Initial database schema, migration, and tenant-scoped access helper.
 - [x] Phase 3 foundation — CSV parsing/validation, import history, row issues, idempotent fingerprints, and audit events. Authenticated upload UI/API remains outstanding until authentication is implemented.
-- [ ] Phase 4 — Cost aggregation, allocation, dashboard queries, and reporting.
+- [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI and exports remain outstanding.
 - [ ] Phase 5 — Anomaly detection, forecasting, and evidence-backed recommendations.
 - [ ] Phase 6 — Secure cloud provider integrations.
 - [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
