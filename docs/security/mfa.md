@@ -1,0 +1,33 @@
+# Multi-factor authentication (MFA)
+
+FinSight supports authenticator-app MFA for password-based accounts.
+
+## Enable MFA
+
+1. Sign in with a verified email address.
+2. Open **Account security** from the workspace header, or visit `/account/security`.
+3. Re-enter the current password to begin enrollment.
+4. Add the displayed secret to an authenticator app that supports standard TOTP.
+5. Enter the current six-digit code and confirm.
+6. Save the ten recovery codes in a password manager or another secure location.
+
+The TOTP setup secret is shown only during enrollment. Recovery codes are shown only once after enabling MFA or rotating them.
+
+## Sign in and recover access
+
+When MFA is enabled, password sign-in requires either:
+- a valid six-digit authenticator code; or
+- one unused recovery code.
+
+Each recovery code is single-use. If codes are lost or exposed, sign in with an available factor and rotate them from Account security. Rotation invalidates every previous recovery code. Disabling MFA requires the current password and a valid authenticator or unused recovery code.
+
+## Security implementation
+
+- TOTP follows RFC 6238: SHA-1, six digits, 30-second period, and a one-step clock-skew tolerance.
+- TOTP secrets are encrypted at rest with AES-256-GCM. The encryption key is derived from `AUTH_SECRET`; keep this secret stable across deployments and backups.
+- Recovery codes contain 64 bits of random entropy. Only SHA-256 hashes are stored.
+- Recovery-code consumption is an atomic database update, preventing the same code from being used twice concurrently.
+- Enrollment, confirmation, rotation, and disable operations require password reauthentication.
+- Existing accounts are not forced to enable MFA. Email verification remains a separate requirement for new registrations.
+
+Apply the schema migration during deployment using `npx prisma migrate deploy`. Keep `AUTH_SECRET` configured on every web instance; changing it without a coordinated key migration will make existing encrypted MFA secrets unreadable.
