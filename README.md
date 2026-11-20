@@ -19,6 +19,8 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - Tag governance scorecard: 30-day, spend-weighted coverage across team, department, project, environment, and cost-center tags; currency-isolated unallocated-spend remediation queue with transparent limits (presence checks, not approved-value compliance).
 - Live cost analytics: 7/30/90-day and month-to-date windows, prior-period comparison, daily and six-month monthly trends, provider/account and service breakdowns, month-end run-rate estimates, and active budget utilization. Currency totals are never combined across currencies.
 - Cost intelligence: 14-calendar-day service baselines with a minimum of 7 observations, 2x/3σ spike thresholds, configured budget threshold alerts, and ranked optimization scenarios using an explicitly disclosed illustrative 5% reduction assumption.
+- PostgreSQL-backed login and authenticated API rate limiting with keyed client-address digests, security-event auditing, and tenant-scoped incident triage.
+- Admin security activity and incident-response workspaces with heuristic detection signals and explicit incident lifecycle transitions.
 - GitHub Actions workflow for linting, TypeScript checks, unit tests, and builds.
 - PostgreSQL-backed cloud sync queue with `FOR UPDATE SKIP LOCKED`, scheduled job creation, bounded retries, sync history, and a SIGTERM/SIGINT-aware worker (`npm run sync:worker`).
 
@@ -103,7 +105,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI is implemented; advanced report exports remain planned.
 - [x] Phase 5 foundation — Historical service-spend anomaly signals, budget threshold alerts, and explainable optimization scenarios. Persistent alert delivery, forecasting confidence ranges, and realized-savings tracking remain planned.
 - [x] Phase 6 foundation — AWS/Azure/GCP account inventory, lifecycle management, audit events, and secret-manager reference metadata.
-- [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
+- [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, server-side RBAC guards, persistent login/API rate limiting, and security-event auditing. Email verification, MFA, and remaining production hardening remain outstanding.
 - [x] Phase 8 foundation — AWS CUR, Azure Cost Management, and GCP detailed billing CSV normalization adapters with a shared validated import path.
 - [x] Phase 9 foundation — PostgreSQL-backed manual/scheduled sync queue, tenant-scoped job history, worker claim/retry logic, and graceful shutdown.
 - [x] Phase 10 foundation — Read-only AWS Cost Explorer (STS AssumeRole), Azure Cost Management, and GCP BigQuery billing-export API adapters with external secret resolution and canonical idempotent ingestion. Production secret resolver deployment, provider IAM setup, credential rotation, and live end-to-end verification remain operator tasks.
