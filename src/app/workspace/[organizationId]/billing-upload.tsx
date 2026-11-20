@@ -7,7 +7,7 @@ type Batch = { id: string; fileName: string; status: string; totalRows: number; 
 
 export default function BillingUpload({ organizationId, accounts, batches }: { organizationId: string; accounts: Account[]; batches: Batch[] }) {
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);\n  const [format, setFormat] = useState("normalized");\n  const selectedAccount = accounts.find((account) => account.id === accountId);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const preview = useMemo(() => {
@@ -23,7 +23,7 @@ export default function BillingUpload({ organizationId, accounts, batches }: { o
     setBusy(true); setMessage("");
     try {
       const body = new FormData(); body.set("file", file); body.set("cloudAccountId", accountId);
-      const response = await fetch("/api/organizations/" + organizationId + "/billing/import", { method: "POST", body });
+      const endpoint = format === "provider" ? "/api/organizations/" + organizationId + "/billing/provider-import" : "/api/organizations/" + organizationId + "/billing/import";\n      const response = await fetch(endpoint, { method: "POST", body });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Import failed.");
       setMessage("Import complete: " + result.importedRows + " imported, " + result.rejectedRows + " rejected, " + result.duplicateRows + " duplicates.");
@@ -39,12 +39,12 @@ export default function BillingUpload({ organizationId, accounts, batches }: { o
       <div className="analytics-panel-heading"><h2>Upload billing CSV</h2><p>Maximum 5 MB · up to 20,000 rows · UTF-8 CSV</p></div>
       {accounts.length ? <form className="billing-upload-form" onSubmit={submit}>
         <label>Cloud account<select value={accountId} onChange={(event) => setAccountId(event.target.value)}>{accounts.map((account) => <option key={account.id} value={account.id}>{account.provider} · {account.name} ({account.externalAccountId})</option>)}</select></label>
-        <label>Billing CSV<input type="file" accept=".csv,text/csv" onChange={(event) => setFile(event.target.files?.[0] ?? null)}/></label>
+        <label>Export format<select value={format} onChange={(event) => setFormat(event.target.value)}><option value="normalized">FinSight normalized CSV</option><option value="provider">Provider-native billing export ({selectedAccount?.provider ?? "select account"})</option></select></label>\n        <label>Billing CSV<input type="file" accept=".csv,text/csv" onChange={(event) => setFile(event.target.files?.[0] ?? null)}/></label>
         {file ? <p className="analytics-muted">Selected: {file.name} · {(file.size / 1024).toFixed(1)} KB</p> : null}
         <button type="submit" disabled={busy || !file}>{busy ? "Importing…" : "Validate & import CSV"}</button>
         {message ? <p className="upload-message" role="status">{message}</p> : null}
       </form> : <p className="analytics-muted">No cloud accounts are configured. Add a cloud account before importing billing data.</p>}
-      <div className="upload-format"><strong>Required columns</strong><code>service, amount, currency, usageDate</code><span>Optional: externalId, region, usageType, resourceId, tag:* columns. Date format: YYYY-MM-DD.</span><a href="/billing-import-template.csv" download>Download CSV template</a></div>
+      <div className="upload-format"><strong>{format === "provider" ? "Provider-native export" : "Required normalized columns"}</strong><code>{format === "provider" ? "AWS CUR · Azure Cost Management · GCP detailed billing" : "service, amount, currency, usageDate"}</code><span>{format === "provider" ? "Choose the provider matching the selected cloud account. Export columns are mapped server-side; unsupported or malformed rows are reported." : "Optional: externalId, region, usageType, resourceId, tag:* columns. Date format: YYYY-MM-DD."}</span><a href="/billing-import-template.csv" download>Download CSV template</a></div>
     </section>
     <section className="analytics-panel upload-history"><div className="analytics-panel-heading"><h2>Import history</h2><p>Most recent 20 organization imports</p></div>
       {batches.length ? batches.map((batch) => <article className="analytics-list-row" key={batch.id}><div><strong>{batch.fileName}</strong><span>{new Date(batch.createdAt).toLocaleString()} · {batch.status}</span><small>{batch.importedRows} imported · {batch.rejectedRows} rejected · {batch.duplicateRows} duplicates / {batch.totalRows} rows</small></div></article>) : <p className="analytics-muted">No billing imports yet.</p>}
