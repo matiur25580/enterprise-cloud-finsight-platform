@@ -65,7 +65,7 @@ export async function evaluateBudgetThresholdAlerts(organizationId: string): Pro
         return created;
       });
       for (const item of pending) {
-        let outcome = { attempted: 0, delivered: 0 };
+        let outcome: { attempted: number; delivered: number; channelResults: Record<string, "DELIVERED" | "FAILED" | "SKIPPED"> } = { attempted: 0, delivered: 0, channelResults: {} };
         let deliveryStatus = "NOT_CONFIGURED";
         try {
           outcome = await deliverBudgetThresholdAlert(item.alert);
