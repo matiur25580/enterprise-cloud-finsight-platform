@@ -4,7 +4,7 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. Cloud billing ingestion, authentication, and production integrations are not yet implemented; dashboard figures are illustrative sample data.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. A browser upload flow, email verification, MFA, and production cloud integrations remain outstanding; dashboard figures are illustrative sample data.
 
 ## Implemented foundation
 
@@ -37,7 +37,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - **Data:** PostgreSQL and Prisma ORM
 - **Security:** Auth.js JWT sessions, password hashing, server-side organization RBAC, and PostgreSQL Row-Level Security
 - **Quality:** ESLint, TypeScript checks, GitHub Actions
-- **Future:** Auth.js, background jobs, provider billing ingestion, analytics, Vitest, Playwright, Docker, and deployment automation
+- **Future:** background jobs, provider billing ingestion, analytics, Vitest, Playwright, Docker, and deployment automation
 
 ## Database model
 
@@ -49,7 +49,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - `Recommendation` stores evidence-backed optimization opportunities and review status.
 - `ImportBatch` and `ImportIssue` track source files, row outcomes, and validation errors.
 
-Tenant-owned tables use PostgreSQL Row-Level Security. Server code must obtain the organization ID from a verified membership and execute tenant queries through `withOrganization` in `src/lib/tenant-context.ts`. The runtime database role must not be a superuser or have `BYPASSRLS`; production should use a separate migration owner and restricted runtime role.
+Tenant-owned tables use PostgreSQL Row-Level Security. Server code must obtain the organization ID from a verified membership and execute tenant queries through `withOrganization` in `src/lib/tenant-context.ts`. Membership discovery uses a transaction-scoped authenticated user context; organization data uses a transaction-scoped organization context. The runtime database role must not be a superuser or have `BYPASSRLS`; production should use a separate migration owner and restricted runtime role.
 
 ## CSV billing import format
 
@@ -70,10 +70,11 @@ The import service is a server-only domain operation. An authenticated upload ro
 Requirements: Node.js 20.9+ and PostgreSQL.
 
 1. Run `npm install`.
-2. Copy `.env.example` to `.env` and set `DATABASE_URL` to your local PostgreSQL database.
+2. Copy `.env.example` to `.env`, set `DATABASE_URL`, and generate `AUTH_SECRET` with `npx auth secret`.
 3. Run `npm run db:generate`.
 4. Apply migrations locally with `npm run db:migrate`.
 5. Start the app with `npm run dev`.
+6. Create an account at `/register`; your first organization is created with the OWNER role.
 
 For an already provisioned database, use `npm run db:deploy`. Never commit `.env`, credentials, or real customer billing exports.
 
