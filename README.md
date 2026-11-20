@@ -278,7 +278,6 @@ Please do not report vulnerabilities in public issues with exploitable details. 
 
 Contributions should include a clear description, relevant tests, and documentation updates. Financial logic changes must include examples covering currency, rounding, billing periods, and edge cases.
 
-No license has been selected yet. Until a license is added, all rights are reserved by the copyright holder; do not assume the code is open for reuse.
 
 
 ### Authenticated CSV uploads
@@ -522,3 +521,4 @@ The Owner/Admin-only security workspace at `/workspace/{organizationId}/security
 
 ## License
 
+No license has been selected yet. Until a license is added, all rights are reserved by the copyright holder; do not assume the code is open for reuse.
