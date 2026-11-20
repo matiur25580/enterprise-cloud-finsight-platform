@@ -1,13 +1,19 @@
-import { claimNextCloudSyncJob, processCloudSyncJob } from "../src/lib/cloud-sync/worker";
-import { prisma } from "../src/lib/prisma";
-import { enqueueDueScheduledSyncs } from "../src/lib/cloud-sync/queue";
-
 let stopping = false;
 const shutdown = () => { stopping = true; };
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 async function main() {
+  const workerDatabaseUrl = process.env.SYNC_WORKER_DATABASE_URL;
+  if (!workerDatabaseUrl) throw new Error("SYNC_WORKER_DATABASE_URL is required for the isolated sync worker database role.");
+  process.env.DATABASE_URL = workerDatabaseUrl;
+
+  const [{ claimNextCloudSyncJob, processCloudSyncJob }, { prisma }, { enqueueDueScheduledSyncs }] = await Promise.all([
+    import("../src/lib/cloud-sync/worker"),
+    import("../src/lib/prisma"),
+    import("../src/lib/cloud-sync/queue")
+  ]);
+
   process.stdout.write("FinSight cloud sync worker started.\n");
   try {
     while (!stopping) {
@@ -29,6 +35,5 @@ async function main() {
 
 main().catch(async (error) => {
   process.stderr.write(String(error) + "\n");
-  await prisma.$disconnect();
   process.exitCode = 1;
 });
