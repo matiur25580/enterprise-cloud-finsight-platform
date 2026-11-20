@@ -6,6 +6,7 @@ import {
   decryptTotpSecret,
   encryptTotpSecret,
   hashRecoveryCode,
+  normalizeRecoveryCode,
   getMatchingTotpTimeStep,
   verifyTotp
 } from "@/lib/mfa-crypto";
@@ -42,5 +43,11 @@ testCase("recovery codes are unique, formatted and hashed consistently", () => {
     assert.match(code, /^[A-F0-9]{4}(?:-[A-F0-9]{4}){3}$/);
     assert.equal(hashRecoveryCode(code), hashRecoveryCode(code.replace(/-/g, "")));
     assert.equal(hashRecoveryCode(code).length, 64);
+    assert.equal(normalizeRecoveryCode(code), code.replace(/-/g, ""));
+    assert.equal(normalizeRecoveryCode(code.replace(/-/g, " ")), code.replace(/-/g, ""));
   }
+  assert.equal(normalizeRecoveryCode("ABCD-EFGH-IJKL-MNOP"), null);
+  assert.equal(normalizeRecoveryCode("ABC!-1234-5678-9ABC"), null);
+  assert.equal(normalizeRecoveryCode("ABCD-1234-5678"), null);
+  assert.throws(() => hashRecoveryCode("ABCD!123456789ABC"));
 });

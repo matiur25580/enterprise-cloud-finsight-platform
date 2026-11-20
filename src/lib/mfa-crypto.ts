@@ -112,8 +112,14 @@ export function createRecoveryCodes(count = 10): string[] {
   });
 }
 
+export function normalizeRecoveryCode(code: string): string | null {
+  const normalized = code.toUpperCase().replace(/[\s-]/g, "");
+  return /^[A-F0-9]{16}$/.test(normalized) ? normalized : null;
+}
+
 export function hashRecoveryCode(code: string): string {
-  const normalized = code.toUpperCase().replace(/[^A-F0-9]/g, "");
+  const normalized = normalizeRecoveryCode(code);
+  if (!normalized) throw new Error("Invalid MFA recovery code");
   return createHash("sha256").update(normalized).digest("hex");
 }
 

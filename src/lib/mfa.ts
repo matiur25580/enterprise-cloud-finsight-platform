@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { decryptTotpSecret, getMatchingTotpTimeStep, hashRecoveryCode } from "@/lib/mfa-crypto";
+import { decryptTotpSecret, getMatchingTotpTimeStep, hashRecoveryCode, normalizeRecoveryCode } from "@/lib/mfa-crypto";
 
 export {
   createTotpSecret,
@@ -40,7 +40,7 @@ export async function verifyAndConsumeMfaFactor(
     return consumed.count === 1;
   }
 
-  if (!/^[A-Fa-f0-9- ]{16,24}$/.test(candidate)) return false;
+  if (!normalizeRecoveryCode(candidate)) return false;
   const codeHash = hashRecoveryCode(candidate);
   const result = await prisma.mfaRecoveryCode.updateMany({
     where: { userId, codeHash, usedAt: null },
