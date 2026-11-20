@@ -232,3 +232,8 @@ After each accepted CSV billing import (manual upload or cloud sync), FinSight e
 ### Budget alert history and delivery outcomes
 
 The workspace route `/workspace/{organizationId}/budgets/alerts` displays the latest 100 threshold events, including budget, threshold, spend at trigger time, configured channels, and notification outcome (DELIVERED, PARTIAL, FAILED, NOT_CONFIGURED, or PENDING). The tenant-scoped read API is `GET /api/organizations/{organizationId}/budgets/alerts`. Each event is initially stored as PENDING before sending; after the provider request completes, its audit metadata is updated with attempted/delivered channel counts and status. DELIVERED means all configured provider endpoints returned success, not guaranteed final inbox delivery. Existing events from before this status tracking was introduced remain marked PENDING/unknown in the history view.
+
+
+### Manual retry for budget notifications
+
+Users with `budgets:manage` can retry a FAILED, PARTIAL, or NOT_CONFIGURED threshold alert from the budget alert history page. The retry API is `POST /api/organizations/{organizationId}/budgets/alerts/{alertId}/retry`. It uses an organization-scoped advisory lock, marks the event RETRYING before sending, records the retry actor in the audit log, and updates cumulative provider attempt/acceptance counts. DELIVERED and in-progress alerts cannot be retried, preventing accidental duplicate sends.
