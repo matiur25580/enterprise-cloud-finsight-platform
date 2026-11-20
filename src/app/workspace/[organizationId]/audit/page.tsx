@@ -17,7 +17,10 @@ function describeAction(action: string): string {
     ORGANIZATION_INVITATION_SENT: "Organization invitation sent",
     ORGANIZATION_INVITATION_ACCEPTED: "Organization invitation accepted",
     ORGANIZATION_MEMBER_ROLE_UPDATED: "Member role updated",
-    ORGANIZATION_MEMBER_REMOVED: "Organization member removed"
+    ORGANIZATION_MEMBER_REMOVED: "Organization member removed",
+    BUDGET_CREATED: "Budget created",
+    BUDGET_UPDATED: "Budget updated",
+    BUDGET_DELETED: "Budget deleted"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
 }
@@ -26,7 +29,7 @@ export default async function AuditPage({ params }: { params: Promise<{ organiza
   const { organizationId } = await params;
   await requireOrganizationPermission(organizationId, "audit:read");
   const events = await withOrganization(prisma, organizationId, (tx) => tx.auditLog.findMany({
-    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation", "Organization"] } },
+    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation", "Organization", "Budget"] } },
     orderBy: { createdAt: "desc" },
     take: 100,
     select: {
