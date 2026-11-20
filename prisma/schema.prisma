@@ -71,6 +71,7 @@ model Organization {
   cloudSyncJobs    CloudSyncJob[]
   invitations      OrganizationInvitation[]
   businessMetrics  BusinessMetric[]
+  revenueRecords   RevenueRecord[]
   @@map("organizations")
 }
 
@@ -360,4 +361,21 @@ model BusinessMetric {
   @@index([organizationId, metricDate])
   @@index([organizationId, metricName, metricDate])
   @@map("business_metrics")
+}
+
+
+model RevenueRecord {
+  id              String       @id @default(cuid())
+  organizationId  String       @map("organization_id")
+  amount          Decimal      @db.Decimal(20, 8)
+  currency        String       @db.VarChar(3)
+  revenueDate     DateTime     @map("revenue_date") @db.Date
+  source          String       @default("MANUAL") @db.VarChar(40)
+  notes           String?      @db.VarChar(500)
+  createdByUserId String       @map("created_by_user_id")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, revenueDate])
+  @@index([organizationId, currency, revenueDate])
+  @@map("revenue_records")
 }
