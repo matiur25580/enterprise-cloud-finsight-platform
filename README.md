@@ -93,7 +93,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 
 - [x] Phase 1 — Application foundation and CI workflow.
 - [x] Phase 2 foundation — Initial database schema, migration, and tenant-scoped access helper.
-- [x] Phase 3 foundation — CSV parsing/validation, import history, row issues, idempotent fingerprints, and audit events. Authenticated upload UI/API remains outstanding until authentication is implemented.
+- [x] Phase 3 foundation — CSV parsing/validation, import history, row issues, idempotent fingerprints, and audit events. Authenticated upload UI/API remains outstanding.
 - [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI and exports remain outstanding.
 - [ ] Phase 5 — Anomaly detection, forecasting, and evidence-backed recommendations.
 - [ ] Phase 6 — Secure cloud provider integrations.
