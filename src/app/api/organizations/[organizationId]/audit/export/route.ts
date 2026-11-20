@@ -37,7 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ orga
   }
   const events = await withOrganization(prisma, organizationId, (tx) => tx.auditLog.findMany({
     where: {
-      entityType: { in: ["CloudSyncJob", "CloudAccount", "Budget", "BusinessMetric"] },
+      entityType: { in: ["CloudSyncJob", "CloudAccount", "Budget", "BusinessMetric", "RevenueRecord"] },
       ...(action ? { action: { contains: action, mode: "insensitive" as const } } : {}),
       ...(from || to ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {})
     },
