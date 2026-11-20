@@ -15,15 +15,12 @@ export async function resolveVaultKv2Secret(reference: string, fetcher: FetchLik
     throw new ProviderCredentialConfigurationError("VAULT_ADDR and VAULT_TOKEN must be configured on the isolated sync worker.");
   }
 
-  let ref: URL;
+  const referenceMatch = reference.match(/^vault:\/\/([A-Za-z0-9._-]+)\/([^?#]+)$/i);
   let base: URL;
-  try {
-    ref = new URL(reference);
-    base = new URL(address);
-  } catch {
-    throw new ProviderCredentialConfigurationError("The Vault address or secret reference is invalid.");
+  try { base = new URL(address); } catch {
+    throw new ProviderCredentialConfigurationError("The Vault address is invalid.");
   }
-  if (ref.protocol !== "vault:" || !ref.hostname || ref.username || ref.password || ref.port || ref.search || ref.hash) {
+  if (!referenceMatch) {
     throw new ProviderCredentialConfigurationError("Vault references must use vault://<mount>/<path> without query strings or fragments.");
   }
   if ((base.protocol !== "https:" && !(process.env.NODE_ENV === "development" && base.protocol === "http:")) ||
@@ -31,13 +28,10 @@ export async function resolveVaultKv2Secret(reference: string, fetcher: FetchLik
     throw new ProviderCredentialConfigurationError("VAULT_ADDR must be an HTTPS URL (HTTP is allowed only in development).");
   }
 
-  const segments = ref.pathname.split("/").filter(Boolean);
+  const mount = referenceMatch[1];
+  const segments = referenceMatch[2].split("/");
   if (segments.length < 1 || segments.some((part) => part === "." || part === ".." || !/^[A-Za-z0-9._-]+$/.test(part))) {
     throw new ProviderCredentialConfigurationError("Vault reference path contains an invalid mount or path segment.");
-  }
-  const mount = ref.hostname;
-  if (!/^[A-Za-z0-9._-]+$/.test(mount)) {
-    throw new ProviderCredentialConfigurationError("Vault KV mount name is invalid.");
   }
   const secretPath = segments.map(encodeURIComponent).join("/");
   const endpoint = new URL("/v1/" + encodeURIComponent(mount) + "/data/" + secretPath, base);
