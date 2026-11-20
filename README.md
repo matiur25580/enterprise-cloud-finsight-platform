@@ -31,14 +31,99 @@ A multi-tenant FinOps workspace for engineering, finance, and platform teams —
 
 The following 12 visuals are **illustrative dashboard concepts**, created to explain the product areas and intended information architecture. They are not screenshots of a running deployment and contain sample values, not customer or production data. Actual workspace views use organization-scoped records and explicit empty states.
 
-<table>
-<tr><td width="50%"><a href="docs/dashboard-previews/01-executive-overview.svg"><img src="docs/dashboard-previews/01-executive-overview.svg" alt="Executive overview dashboard preview" width="100%"/></a><br/><strong>01. Executive overview</strong><br/><sub>Leadership snapshot of cloud spend, reporting coverage, and operational status.</sub></td><td width="50%"><a href="docs/dashboard-previews/02-cost-analytics.svg"><img src="docs/dashboard-previews/02-cost-analytics.svg" alt="Cost analytics dashboard preview" width="100%"/></a><br/><strong>02. Cost analytics</strong><br/><sub>Spend trends and service-level cost analysis across the selected reporting window.</sub></td></tr>
-<tr><td width="50%"><a href="docs/dashboard-previews/03-budget-management.svg"><img src="docs/dashboard-previews/03-budget-management.svg" alt="Budget management dashboard preview" width="100%"/></a><br/><strong>03. Budget management</strong><br/><sub>Budget utilization and portfolio-level financial guardrails.</sub></td><td width="50%"><a href="docs/dashboard-previews/04-forecast-accuracy.svg"><img src="docs/dashboard-previews/04-forecast-accuracy.svg" alt="Forecast & accuracy dashboard preview" width="100%"/></a><br/><strong>04. Forecast & accuracy</strong><br/><sub>Month-end run-rate forecasting and forecast-versus-actual review.</sub></td></tr>
-<tr><td width="50%"><a href="docs/dashboard-previews/05-cost-allocation.svg"><img src="docs/dashboard-previews/05-cost-allocation.svg" alt="Cost allocation dashboard preview" width="100%"/></a><br/><strong>05. Cost allocation</strong><br/><sub>Team and business ownership views for cloud showback.</sub></td><td width="50%"><a href="docs/dashboard-previews/06-kubernetes-costs.svg"><img src="docs/dashboard-previews/06-kubernetes-costs.svg" alt="Kubernetes costs dashboard preview" width="100%"/></a><br/><strong>06. Kubernetes costs</strong><br/><sub>Container and namespace cost visibility for platform teams.</sub></td></tr>
-<tr><td width="50%"><a href="docs/dashboard-previews/07-cloud-accounts.svg"><img src="docs/dashboard-previews/07-cloud-accounts.svg" alt="Cloud accounts dashboard preview" width="100%"/></a><br/><strong>07. Cloud accounts</strong><br/><sub>AWS, Azure, and Google Cloud account inventory and status.</sub></td><td width="50%"><a href="docs/dashboard-previews/08-optimization-insights.svg"><img src="docs/dashboard-previews/08-optimization-insights.svg" alt="Optimization insights dashboard preview" width="100%"/></a><br/><strong>08. Optimization insights</strong><br/><sub>Ranked opportunities with transparent illustrative savings assumptions.</sub></td></tr>
-<tr><td width="50%"><a href="docs/dashboard-previews/09-tag-governance.svg"><img src="docs/dashboard-previews/09-tag-governance.svg" alt="Tag governance dashboard preview" width="100%"/></a><br/><strong>09. Tag governance</strong><br/><sub>Tag coverage and unallocated-spend governance signals.</sub></td><td width="50%"><a href="docs/dashboard-previews/10-executive-reporting.svg"><img src="docs/dashboard-previews/10-executive-reporting.svg" alt="Executive reporting dashboard preview" width="100%"/></a><br/><strong>10. Executive reporting</strong><br/><sub>Leadership reporting for cloud efficiency and financial performance.</sub></td></tr>
-<tr><td width="50%"><a href="docs/dashboard-previews/11-security-activity.svg"><img src="docs/dashboard-previews/11-security-activity.svg" alt="Security activity dashboard preview" width="100%"/></a><br/><strong>11. Security activity</strong><br/><sub>Tenant-scoped security events and abuse-signal monitoring.</sub></td><td width="50%"><a href="docs/dashboard-previews/12-incident-response.svg"><img src="docs/dashboard-previews/12-incident-response.svg" alt="Incident response dashboard preview" width="100%"/></a><br/><strong>12. Incident response</strong><br/><sub>Owner/Admin incident triage and lifecycle management.</sub></td></tr>
-</table>
+<div align="center">
+
+<a href="docs/dashboard-previews/01-executive-overview.svg"><img src="docs/dashboard-previews/01-executive-overview.svg" alt="Executive overview dashboard preview" width="100%"/></a><br/><strong>01. Executive overview</strong><br/><sub>Leadership snapshot of cloud spend, reporting coverage, and operational status.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/02-cost-analytics.svg"><img src="docs/dashboard-previews/02-cost-analytics.svg" alt="Cost analytics dashboard preview" width="100%"/></a><br/><strong>02. Cost analytics</strong><br/><sub>Spend trends and service-level cost analysis across the selected reporting window.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/03-budget-management.svg"><img src="docs/dashboard-previews/03-budget-management.svg" alt="Budget management dashboard preview" width="100%"/></a><br/><strong>03. Budget management</strong><br/><sub>Budget utilization and portfolio-level financial guardrails.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/04-forecast-accuracy.svg"><img src="docs/dashboard-previews/04-forecast-accuracy.svg" alt="Forecast & accuracy dashboard preview" width="100%"/></a><br/><strong>04. Forecast & accuracy</strong><br/><sub>Month-end run-rate forecasting and forecast-versus-actual review.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/05-cost-allocation.svg"><img src="docs/dashboard-previews/05-cost-allocation.svg" alt="Cost allocation dashboard preview" width="100%"/></a><br/><strong>05. Cost allocation</strong><br/><sub>Team and business ownership views for cloud showback.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/06-kubernetes-costs.svg"><img src="docs/dashboard-previews/06-kubernetes-costs.svg" alt="Kubernetes costs dashboard preview" width="100%"/></a><br/><strong>06. Kubernetes costs</strong><br/><sub>Container and namespace cost visibility for platform teams.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/07-cloud-accounts.svg"><img src="docs/dashboard-previews/07-cloud-accounts.svg" alt="Cloud accounts dashboard preview" width="100%"/></a><br/><strong>07. Cloud accounts</strong><br/><sub>AWS, Azure, and Google Cloud account inventory and status.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/08-optimization-insights.svg"><img src="docs/dashboard-previews/08-optimization-insights.svg" alt="Optimization insights dashboard preview" width="100%"/></a><br/><strong>08. Optimization insights</strong><br/><sub>Ranked opportunities with transparent illustrative savings assumptions.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/09-tag-governance.svg"><img src="docs/dashboard-previews/09-tag-governance.svg" alt="Tag governance dashboard preview" width="100%"/></a><br/><strong>09. Tag governance</strong><br/><sub>Tag coverage and unallocated-spend governance signals.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/10-executive-reporting.svg"><img src="docs/dashboard-previews/10-executive-reporting.svg" alt="Executive reporting dashboard preview" width="100%"/></a><br/><strong>10. Executive reporting</strong><br/><sub>Leadership reporting for cloud efficiency and financial performance.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/11-security-activity.svg"><img src="docs/dashboard-previews/11-security-activity.svg" alt="Security activity dashboard preview" width="100%"/></a><br/><strong>11. Security activity</strong><br/><sub>Tenant-scoped security events and abuse-signal monitoring.</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="docs/dashboard-previews/12-incident-response.svg"><img src="docs/dashboard-previews/12-incident-response.svg" alt="Incident response dashboard preview" width="100%"/></a><br/><strong>12. Incident response</strong><br/><sub>Owner/Admin incident triage and lifecycle management.</sub>
+
+</div>
 
 ## What FinSight helps teams do
 
