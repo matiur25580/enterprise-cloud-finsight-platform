@@ -4,7 +4,7 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, live provider API authorization, and automated provider billing sync remain outstanding. Provider-native AWS CUR, Azure Cost Management, and GCP detailed billing CSV exports can now be normalized and imported through the workspace. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, and external secret-manager references without accepting raw credentials.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Email verification, MFA, live provider API authorization, and provider billing API adapters remain outstanding. A durable PostgreSQL-backed sync queue, scheduled account polling, retry handling, and a graceful-shutdown worker are implemented. Provider-native AWS CUR, Azure Cost Management, and GCP detailed billing CSV exports can now be normalized and imported through the workspace. The cloud account workspace now manages AWS/Azure/GCP account metadata, lifecycle status, external secret-manager references, manual sync queueing, and sync schedules without accepting raw credentials. The sync worker currently records provider jobs as BLOCKED until a live read-only provider connector and secret-manager resolver are deployed.
 
 ## Implemented foundation
 
@@ -17,7 +17,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - Auth.js credentials authentication, bcrypt password hashing, organization bootstrap, JWT sessions, and server-side RBAC guards.
 - Live cost analytics: 7/30/90-day and month-to-date windows, prior-period comparison, daily and six-month monthly trends, provider/account and service breakdowns, month-end run-rate estimates, and active budget utilization. Currency totals are never combined across currencies.
 - Cost intelligence: 14-calendar-day service baselines with a minimum of 7 observations, 2x/3σ spike thresholds, configured budget threshold alerts, and ranked optimization scenarios using an explicitly disclosed illustrative 5% reduction assumption.
-- GitHub Actions workflow for linting, TypeScript checks, and builds.
+- GitHub Actions workflow for linting, TypeScript checks, unit tests, and builds.\n- PostgreSQL-backed cloud sync queue with `FOR UPDATE SKIP LOCKED`, scheduled job creation, bounded retries, sync history, and a SIGTERM/SIGINT-aware worker (`npm run sync:worker`).
 
 ## Planned capabilities
 
@@ -45,7 +45,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 ## Database model
 
 - `Organization`, `User`, and `Membership` support organization membership and role assignments.
-- `CloudAccount` stores AWS, Azure, and Google Cloud account metadata, lifecycle status, optional external secret-manager references, and sync timestamps.
+- `CloudAccount` stores AWS, Azure, and Google Cloud account metadata, lifecycle status, optional external secret-manager references, sync schedules, and sync timestamps.\n- `CloudSyncJob` stores tenant-scoped manual/scheduled sync work, attempt counts, execution timestamps, and blocked/failure details.
 - `CostRecord` stores normalized daily charges with decimal precision, currency, tags, and deduplication keys.
 - `Budget` stores date-bounded budgets and alert thresholds.
 - `AuditLog` stores attributable, organization-scoped events.
@@ -66,7 +66,7 @@ Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
 Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
 ```
 
-The authenticated workspace provides normalized CSV upload and provider-native export import. Choose the provider-native option for AWS CUR, Azure Cost Management exports, or GCP detailed billing exports. Cloud account inventory is managed separately under each organization. This is file-based ingestion, not a live provider API connection. Secret references are pointers only—provider credentials are not stored or fetched by this release.
+The authenticated workspace provides normalized CSV upload and provider-native export import. Choose the provider-native option for AWS CUR, Azure Cost Management exports, or GCP detailed billing exports. Cloud account inventory is managed separately under each organization. This is file-based ingestion, not a live provider API connection. Secret references are pointers only—provider credentials are not stored or fetched by this release. Sync schedules can enqueue jobs at 15-minute to 7-day intervals; queued jobs are safely marked BLOCKED until the relevant provider connector is implemented.
 
 ## Local development
 
@@ -79,7 +79,7 @@ Requirements: Node.js 20.9+ and PostgreSQL.
 5. Start the app with `npm run dev`.
 6. Create an account at `/register`; your first organization is created with the OWNER role.
 
-For an already provisioned database, use `npm run db:deploy`. Never commit `.env`, credentials, or real customer billing exports.
+For an already provisioned database, use `npm run db:deploy`. Never commit `.env`, credentials, or real customer billing exports. Run `npm run sync:worker` as a separate background worker after applying migrations; configure one worker instance per environment unless you have verified the database connection budget.
 
 ## Architecture principles
 
@@ -99,7 +99,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 - [x] Phase 4 foundation — Tenant-scoped cost aggregation, daily/monthly trends, provider/service breakdowns, period comparisons, budget utilization, and month-end run-rate forecast. CSV upload UI and exports remain outstanding.
 - [x] Phase 5 foundation — Historical service-spend anomaly signals, budget threshold alerts, and explainable optimization scenarios. Persistent alert delivery, forecasting confidence ranges, and realized-savings tracking remain planned.
 - [x] Phase 6 foundation — AWS/Azure/GCP account inventory, lifecycle management, audit events, and secret-manager reference metadata.
-- [x] Phase 8 foundation — AWS CUR, Azure Cost Management, and GCP detailed billing CSV normalization adapters with a shared validated import path. Live provider authorization and scheduled billing sync remain planned.
+- [x] Phase 8 foundation — AWS CUR, Azure Cost Management, and GCP detailed billing CSV normalization adapters with a shared validated import path.\n- [x] Phase 9 foundation — PostgreSQL-backed manual/scheduled sync queue, tenant-scoped job history, worker claim/retry logic, and graceful shutdown. Live provider API connectors remain planned.
 - [x] Phase 7 foundation — Credentials authentication, organization bootstrap, JWT sessions, and server-side RBAC guards. Email verification, MFA, rate limiting, and production hardening remain outstanding.
 
 ## Security
