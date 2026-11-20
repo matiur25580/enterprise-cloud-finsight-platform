@@ -29,7 +29,12 @@ export function validateImpactPeriods(input: ImpactPeriodInput) {
   if (baselineDays !== observedDays) {
     return { valid: false as const, error: "Baseline and observed periods must contain the same number of days." };
   }
-  const today = new Date();\n  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());\n  if (observedEnd.getTime() > todayUtc) {\n    return { valid: false as const, error: "The observed period cannot include future dates." };\n  }\n  if (baselineEnd.getTime() >= observedStart.getTime()) {
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  if (observedEnd.getTime() > todayUtc) {
+    return { valid: false as const, error: "The observed period cannot include future dates." };
+  }
+  if (baselineEnd.getTime() >= observedStart.getTime()) {
     return { valid: false as const, error: "The observed period must start after the baseline period ends." };
   }
   return { valid: true as const, baselineStart, baselineEnd, observedStart, observedEnd, periodDays: baselineDays };
