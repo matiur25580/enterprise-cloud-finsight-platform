@@ -18,7 +18,7 @@ FinSight provides email-based password reset for password accounts.
 - Forgot-password and reset-password requests have independent persistent IP-based rate-limit buckets.
 - New reset requests invalidate earlier outstanding reset links for that account.
 - Password reset does not disable MFA or regenerate recovery codes. Email access alone cannot bypass a configured second factor.
-- Existing signed-in sessions are not forcibly revoked by this flow; Auth.js JWT sessions expire within the configured eight-hour maximum age. Users should sign out of other devices after a suspected compromise.
+- A successful password reset increments the user session version. Existing JWT sessions are rejected on their next server-side session check, requiring sign-in again on every device.
 
 ## Required environment
 

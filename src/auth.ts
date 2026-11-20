@@ -39,17 +39,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!factorValid) return null;
         }
 
-        return { id: user.id, email: user.email, name: user.name };
+        return { id: user.id, email: user.email, name: user.name, sessionVersion: user.sessionVersion };
       }
     })
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.id) token.userId = user.id;
+      if (user?.id) {
+        token.userId = user.id;
+        token.sessionVersion = typeof user.sessionVersion === "number" ? user.sessionVersion : 0;
+        delete token.invalidated;
+        return token;
+      }
+
+      if (typeof token.userId === "string" && !token.invalidated) {
+        const current = await prisma.user.findUnique({
+          where: { id: token.userId },
+          select: { sessionVersion: true }
+        });
+        const issuedVersion = typeof token.sessionVersion === "number" ? token.sessionVersion : 0;
+        if (!current || current.sessionVersion !== issuedVersion) {
+          delete token.userId;
+          token.invalidated = true;
+        }
+      }
       return token;
     },
     async session({ session, token }) {
-      if (session.user && typeof token.userId === "string") {
+      if (session.user && typeof token.userId === "string" && !token.invalidated) {
         session.user.id = token.userId;
       }
       return session;

@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         where: { tokenHash, expiresAt: { gt: now } }
       });
       if (result.count !== 1) return false;
-      await tx.user.update({ where: { id: token.userId }, data: { passwordHash } });
+      await tx.user.update({ where: { id: token.userId }, data: { passwordHash, sessionVersion: { increment: 1 } } });
       await tx.passwordResetToken.deleteMany({ where: { userId: token.userId } });
       return true;
     });
