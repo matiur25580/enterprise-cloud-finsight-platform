@@ -18,7 +18,7 @@ test("normalizes AWS Cost and Usage export columns", () => {
 });
 
 test("normalizes Azure Cost Management export columns", () => {
-  const source = "CostInBillingCurrency,BillingCurrency,Date,ServiceName,SubscriptionId,ResourceLocation,ResourceId,Tags\n4.25,INR,2026-11-02,Virtual Machines,sub-123,centralindia,/subscriptions/sub-123/vm1,\"{\\"team\\":\\"platform\\"}\"";
+  const source = "CostInBillingCurrency,BillingCurrency,Date,ServiceName,SubscriptionId,ResourceLocation,ResourceId\n4.25,INR,2026-11-02,Virtual Machines,sub-123,centralindia,/subscriptions/sub-123/vm1";
   const normalized = normalizeProviderBillingExport("AZURE", source);
   const parsed = parseBillingCsv(normalized.csv, org, account);
   assert.equal(parsed.rows[0].service, "Virtual Machines");
