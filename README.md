@@ -4,7 +4,7 @@
 
 FinSight is a cloud financial operations (FinOps) platform designed to help engineering, finance, and platform teams understand, allocate, forecast, and optimize cloud infrastructure spending.
 
-> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Browser CSV upload, email verification, MFA, and production cloud integrations remain outstanding.
+> **Project status:** Active development. The Next.js application foundation and initial PostgreSQL/Prisma data model are committed. The CSV parser/import service and credentials authentication/RBAC foundation are committed. The authenticated cost dashboard now queries tenant-scoped billing data, provider accounts, service allocation, budgets, and forecasts. Organization members with billing-import permission can upload CSV files through a protected workspace route; each import is validated, deduplicated, audited, and recorded in import history. The cost-intelligence workspace adds historical service-spike detection, budget threshold signals, and transparent optimization scenarios. Browser CSV upload, email verification, MFA, and production cloud integrations remain outstanding.
 
 ## Implemented foundation
 
@@ -111,3 +111,8 @@ Contributions should include a clear description, relevant tests, and documentat
 ## License
 
 No license has been selected yet. Until a license is added, all rights are reserved by the copyright holder; do not assume the code is open for reuse.
+
+
+### Authenticated CSV uploads
+
+Open an organization workspace and select **Import billing CSV**. Uploads require the `billing:import` permission and an active cloud account in that organization. Files are limited to 5 MB and 20,000 rows. The API derives the actor from the Auth.js session, validates organization membership server-side, records rejected rows and duplicates, and writes an audit event. A downloadable template is available at `/billing-import-template.csv`.
