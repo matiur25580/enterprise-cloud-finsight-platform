@@ -68,7 +68,7 @@ export function validateProviderSecret(provider: CloudProvider, externalAccountI
     return;
   }
   if (provider === "AZURE") {
-    if (!/^[0-9a-f-]{36}$/i.test(externalAccountId)) throw new ProviderCredentialConfigurationError("The Azure cloud account ID must be a subscription GUID.");
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(externalAccountId)) throw new ProviderCredentialConfigurationError("The Azure cloud account ID must be a subscription GUID.");
     requiredString(secret.tenantId, "tenantId"); requiredString(secret.clientId, "clientId"); requiredString(secret.clientSecret, "clientSecret");
     return;
   }
