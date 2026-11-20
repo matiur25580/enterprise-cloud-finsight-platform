@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeAllocation, summarizeAllocationRows } from "./cost-allocation";
+import { normalizeAllocation, summarizeAllocationRows } from "./cost-allocation-math";
 
 test("normalizes missing and whitespace-only tags as unallocated", () => {
   assert.equal(normalizeAllocation(null), "Unallocated");
