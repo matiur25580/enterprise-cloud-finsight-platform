@@ -106,3 +106,91 @@ export function getClientAddress(request: Request): string | null {
 
   return process.env.NODE_ENV === "production" ? null : "127.0.0.1";
 }
+
+
+export async function consumeApiRateLimit(input: {
+  organizationId: string;
+  userId: string;
+  bucket: string;
+  limit: number;
+  windowSeconds: number;
+}): Promise<RateLimitDecision> {
+  if (!/^[a-z0-9:_-]{1,100}$/i.test(input.bucket) ||
+      !Number.isInteger(input.limit) || input.limit < 1 ||
+      !Number.isInteger(input.windowSeconds) || input.windowSeconds < 1) {
+    throw new Error("Invalid API rate limit configuration");
+  }
+
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("A strong AUTH_SECRET is required for API rate limiting");
+  }
+  const keyHash = createHmac("sha256", secret)
+    .update(`api:${input.organizationId}:${input.userId}:${input.bucket}`)
+    .digest("hex");
+
+  const rows = await prisma.$queryRaw<
+    Array<{ request_count: number; window_started_at: Date }>
+  >`
+    WITH expired AS (
+      DELETE FROM "api_rate_limit_buckets"
+      WHERE "key_hash" IN (
+        SELECT "key_hash" FROM "api_rate_limit_buckets"
+        WHERE "expires_at" <= CURRENT_TIMESTAMP
+        ORDER BY "expires_at" LIMIT 50
+      )
+      RETURNING 1
+    ),
+    cleanup AS (SELECT COUNT(*) FROM expired)
+    INSERT INTO "api_rate_limit_buckets"
+      ("key_hash", "window_started_at", "request_count", "expires_at")
+    SELECT ${keyHash}, CURRENT_TIMESTAMP, 1,
+      CURRENT_TIMESTAMP + (${input.windowSeconds} * INTERVAL '1 second')
+    FROM cleanup
+    ON CONFLICT ("key_hash") DO UPDATE SET
+      "request_count" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${input.windowSeconds} * INTERVAL '1 second')
+        THEN 1 ELSE "api_rate_limit_buckets"."request_count" + 1 END,
+      "window_started_at" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${input.windowSeconds} * INTERVAL '1 second')
+        THEN CURRENT_TIMESTAMP ELSE "api_rate_limit_buckets"."window_started_at" END,
+      "expires_at" = CASE
+        WHEN "api_rate_limit_buckets"."window_started_at"
+          <= CURRENT_TIMESTAMP - (${input.windowSeconds} * INTERVAL '1 second')
+        THEN CURRENT_TIMESTAMP + (${input.windowSeconds} * INTERVAL '1 second')
+        ELSE "api_rate_limit_buckets"."expires_at" END
+    RETURNING "request_count", "window_started_at"
+  `;
+
+  const row = rows[0];
+  if (!row) throw new Error("Rate limit storage did not return a counter");
+  const decision = getRateLimitDecision(
+    Number(row.request_count), input.limit, row.window_started_at, input.windowSeconds
+  );
+
+  if (!decision.allowed) {
+    const { withOrganization } = await import("@/lib/tenant-context");
+    await withOrganization(prisma, input.organizationId, (tx) =>
+      tx.apiSecurityEvent.create({
+        data: {
+          organizationId: input.organizationId,
+          routeBucket: input.bucket,
+          requestCount: Number(row.request_count),
+          requestLimit: input.limit
+        }
+      })
+    );
+    console.warn(JSON.stringify({
+      event: "api_rate_limit_exceeded",
+      organizationId: input.organizationId,
+      routeBucket: input.bucket,
+      requestCount: Number(row.request_count),
+      requestLimit: input.limit,
+      occurredAt: new Date().toISOString()
+    }));
+  }
+
+  return decision;
+}
