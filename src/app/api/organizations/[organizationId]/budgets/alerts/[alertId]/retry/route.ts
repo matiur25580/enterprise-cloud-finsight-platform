@@ -51,7 +51,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
         entityType: "Budget", entityId: event.entityId,
         metadata: { alertEventId: event.id, thresholdPercent: alert.thresholdPercent }
       } });
-      const previousResults = metadata.channelResults && typeof metadata.channelResults === "object" && !Array.isArray(metadata.channelResults) ? metadata.channelResults as Record<string, unknown> : {};\n      const skipChannels = Object.entries(previousResults).filter(([, result]) => result === "DELIVERED").map(([channel]) => channel);\n      return { id: event.id, budgetId: event.entityId, alert, metadata, skipChannels };
+      const previousResults = metadata.channelResults && typeof metadata.channelResults === "object" && !Array.isArray(metadata.channelResults) ? metadata.channelResults as Record<string, unknown> : {};
+      const skipChannels = Object.entries(previousResults).filter(([, result]) => result === "DELIVERED").map(([channel]) => channel);\n      return { id: event.id, budgetId: event.entityId, alert, metadata, skipChannels };
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "";
