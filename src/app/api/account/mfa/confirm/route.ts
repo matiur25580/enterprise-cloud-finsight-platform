@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     await prisma.$transaction(async (tx) => {
       const updated = await tx.user.updateMany({
         where: { id: userId, mfaEnabledAt: null, mfaSecretEncrypted: user.mfaSecretEncrypted, mfaLastUsedTimeStep: null },
-        data: { mfaEnabledAt: now, mfaLastUsedTimeStep: matchedTimeStep }
+        data: { mfaEnabledAt: now, mfaLastUsedTimeStep: BigInt(matchedTimeStep) }
       });
       if (updated.count !== 1) throw new Error("MFA setup changed concurrently");
       await tx.mfaRecoveryCode.deleteMany({ where: { userId } });

@@ -33,3 +33,6 @@ Each recovery code is single-use. If codes are lost or exposed, sign in with an 
 - Existing accounts are not forced to enable MFA. Email verification remains a separate requirement for new registrations.
 
 Apply the schema migration during deployment using `npx prisma migrate deploy`. Keep `AUTH_SECRET` configured on every web instance; changing it without a coordinated key migration will make existing encrypted MFA secrets unreadable.
+
+
+The persisted TOTP time-step counter uses PostgreSQL `BIGINT` / Prisma `BigInt` to avoid 32-bit integer overflow over the lifetime of the service. The counter is converted to a JavaScript `bigint` only at the database boundary; it is not exposed in API responses.

@@ -32,10 +32,10 @@ export async function verifyAndConsumeMfaFactor(
         id: userId,
         OR: [
           { mfaLastUsedTimeStep: null },
-          { mfaLastUsedTimeStep: { lt: matchedTimeStep } }
+          { mfaLastUsedTimeStep: { lt: BigInt(matchedTimeStep) } }
         ]
       },
-      data: { mfaLastUsedTimeStep: matchedTimeStep }
+      data: { mfaLastUsedTimeStep: BigInt(matchedTimeStep) }
     });
     return consumed.count === 1;
   }
