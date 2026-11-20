@@ -17,7 +17,6 @@ export default async function CostAllocationPage({ params, searchParams }: {
   const dimensions = Object.keys(ALLOCATION_DIMENSIONS) as AllocationDimension[];
   const dimension = dimensions.includes(query.dimension as AllocationDimension) ? query.dimension as AllocationDimension : "team";
   const data = await getCostAllocation(organizationId, dimension);
-  const currencyTotals = new Map(data.byCurrency.map((item) => [item.currency, item.totalSpend]));
   return <main className="analytics-shell">
     <header className="analytics-topbar"><Link className="analytics-brand" href="/workspace">fin<span>sight</span></Link><Link className="analytics-back" href={"/workspace/" + organizationId}>Cost dashboard</Link></header>
     <div className="analytics-content">
