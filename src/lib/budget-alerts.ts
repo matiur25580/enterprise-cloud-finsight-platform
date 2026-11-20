@@ -3,9 +3,9 @@ import { withOrganization } from "@/lib/tenant-context";
 import { deliverBudgetThresholdAlert } from "@/lib/cloud-sync/notifications";
 
 /**
- * Evaluates active budgets after a billing import. Audit rows act as a durable
- * per-budget/per-threshold notification ledger; an advisory transaction lock
- * prevents concurrent imports from delivering the same threshold twice.
+ * Evaluates active budgets after a billing import. A durable audit event is
+ * written before delivery, then updated with the actual provider outcome.
+ * A PostgreSQL advisory transaction lock prevents duplicate threshold events.
  */
 export async function evaluateBudgetThresholdAlerts(organizationId: string): Promise<void> {
   try {
@@ -18,9 +18,8 @@ export async function evaluateBudgetThresholdAlerts(organizationId: string): Pro
     for (const budget of budgets) {
       const pending = await withOrganization(prisma, organizationId, async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${organizationId}), hashtext(${budget.id}))`;
-        const until = budget.endsAt < today ? budget.endsAt : today;
         const aggregate = await tx.costRecord.aggregate({
-          where: { organizationId, currency: budget.currency, usageDate: { gte: budget.startsAt, lte: until } },
+          where: { organizationId, currency: budget.currency, usageDate: { gte: budget.startsAt, lte: today } },
           _sum: { amount: true }
         });
         const spent = aggregate._sum.amount ? Number(aggregate._sum.amount.toString()) : 0;
@@ -41,35 +40,56 @@ export async function evaluateBudgetThresholdAlerts(organizationId: string): Pro
           if (metadata.startsAt !== budget.startsAt.toISOString().slice(0, 10) || metadata.endsAt !== budget.endsAt.toISOString().slice(0, 10)) return [];
           return typeof metadata.thresholdPercent === "number" ? [metadata.thresholdPercent] : [];
         }));
-        const created: number[] = [];
+        const created: Array<{ id: string; alert: {
+          budgetName: string; currency: string; budgetAmount: number; spent: number;
+          utilizationPercent: number; thresholdPercent: number; startsAt: string; endsAt: string;
+        } }> = [];
         for (const thresholdPercent of thresholds) {
           if (alreadySent.has(thresholdPercent)) continue;
-          await tx.auditLog.create({
+          const alert = {
+            budgetName: budget.name, currency: budget.currency, budgetAmount: amount,
+            spent, utilizationPercent, thresholdPercent,
+            startsAt: budget.startsAt.toISOString().slice(0, 10),
+            endsAt: budget.endsAt.toISOString().slice(0, 10)
+          };
+          const event = await tx.auditLog.create({
             data: {
               organizationId, actorUserId: null, action: "BUDGET_THRESHOLD_ALERT_SENT",
               entityType: "Budget", entityId: budget.id,
-              metadata: {
-                budgetName: budget.name, currency: budget.currency, budgetAmount: amount,
-                spent, utilizationPercent, thresholdPercent,
-                startsAt: budget.startsAt.toISOString().slice(0, 10),
-                endsAt: budget.endsAt.toISOString().slice(0, 10)
-              }
-            }
+              metadata: { ...alert, deliveryStatus: "PENDING", attempted: 0, delivered: 0, channels: [] }
+            },
+            select: { id: true }
           });
-          created.push(thresholdPercent);
+          created.push({ id: event.id, alert });
         }
-        return created.map((thresholdPercent) => ({
-          budgetName: budget.name, currency: budget.currency, budgetAmount: amount,
-          spent, utilizationPercent, thresholdPercent,
-          startsAt: budget.startsAt.toISOString().slice(0, 10),
-          endsAt: budget.endsAt.toISOString().slice(0, 10)
-        }));
+        return created;
       });
-      for (const alert of pending) {
-        try { await deliverBudgetThresholdAlert(alert); } catch { /* Notification delivery must not fail a billing import. */ }
+      for (const item of pending) {
+        let outcome = { attempted: 0, delivered: 0 };
+        let deliveryStatus = "NOT_CONFIGURED";
+        try {
+          outcome = await deliverBudgetThresholdAlert(item.alert);
+          deliveryStatus = outcome.attempted === 0 ? "NOT_CONFIGURED"
+            : outcome.delivered === outcome.attempted ? "DELIVERED"
+            : outcome.delivered > 0 ? "PARTIAL" : "FAILED";
+        } catch {
+          deliveryStatus = "FAILED";
+        }
+        try {
+          await withOrganization(prisma, organizationId, (tx) => tx.auditLog.updateMany({
+            where: { id: item.id, organizationId, entityType: "Budget", entityId: budget.id },
+            data: { metadata: {
+              ...item.alert, deliveryStatus, attempted: outcome.attempted, delivered: outcome.delivered,
+              channels: [
+                ...(process.env.SLACK_SYNC_ALERT_WEBHOOK_URL ? ["SLACK"] : []),
+                ...(process.env.RESEND_API_KEY && process.env.SYNC_ALERT_EMAIL_FROM && process.env.SYNC_ALERT_EMAIL_TO ? ["EMAIL"] : [])
+              ]
+            } }
+          }));
+        } catch { /* The initial PENDING audit event remains visible if status persistence fails. */ }
       }
     }
   } catch {
-    // Budget alert evaluation is best-effort and never rolls back an accepted import.
+    // Budget alert evaluation and delivery never roll back an accepted billing import.
   }
 }
