@@ -53,6 +53,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
   if (recipientError) return NextResponse.json({ error: recipientError }, { status: 400 });
   try {
     const rule = await withOrganization(prisma, organizationId, async (tx) => {
+      const duplicate = await tx.sharedCostAllocationRule.findFirst({ where: { organizationId, isActive: true, servicePattern: { equals: parsed.data.servicePattern, mode: "insensitive" }, sourceTagKey: parsed.data.sourceTagKey, sourceTagValue: parsed.data.sourceTagValue } });
+      if (duplicate) throw new Error("DUPLICATE_RULE");
       const created = await tx.sharedCostAllocationRule.create({
         data: { organizationId, ...parsed.data, recipients: parsed.data.recipients as Prisma.InputJsonValue }
       });
@@ -64,5 +66,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
       return created;
     });
     return NextResponse.json({ rule }, { status: 201 });
-  } catch { return NextResponse.json({ error: "Unable to create allocation rule." }, { status: 500 }); }
+  } catch (error) {
+    if (error instanceof Error && error.message === "DUPLICATE_RULE") return NextResponse.json({ error: "An active rule already matches this exact service and tag selector. Pause it before creating a replacement." }, { status: 409 });
+    if (error && typeof error === "object" && "code" in error && error.code === "P2002") return NextResponse.json({ error: "An active rule already matches this service and tag selector." }, { status: 409 });
+    return NextResponse.json({ error: "Unable to create allocation rule." }, { status: 500 });
+  }
 }
