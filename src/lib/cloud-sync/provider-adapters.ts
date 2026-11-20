@@ -51,7 +51,7 @@ async function resolveProviderSecret(input: { credentialRef: string | null; prov
 export function validateProviderSecret(provider: CloudProvider, externalAccountId: string, secret: Secret): void {
   if (provider === "AWS") {
     const roleArn = requiredString(secret.roleArn, "roleArn");
-    if (!/^arn:aws:iam::\\d{12}:role\\/[A-Za-z0-9_+=,.@/-]+$/.test(roleArn) || roleArn.split(":")[4] !== externalAccountId) {
+    if (!/^arn:aws:iam::\d{12}:role\\/[A-Za-z0-9_+=,.@/-]+$/.test(roleArn) || roleArn.split(":")[4] !== externalAccountId) {
       throw new ProviderCredentialConfigurationError("The AWS role ARN must belong to the registered 12-digit account ID.");
     }
     return;
@@ -67,7 +67,7 @@ export function validateProviderSecret(provider: CloudProvider, externalAccountI
     throw new ProviderCredentialConfigurationError("GCP credentials must be a service-account or external-account credential configuration.");
   }
   const table = requiredString(secret.billingExportTable, "billingExportTable");
-  const match = table.match(/^([a-z][a-z0-9-]{4,28})\\.([A-Za-z_][A-Za-z0-9_]*)\\.([A-Za-z0-9_]+)$/);
+  const match = table.match(/^([a-z][a-z0-9-]{4,28})\.([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z0-9_]+)$/);
   if (!match || match[1] !== externalAccountId) throw new ProviderCredentialConfigurationError("GCP billingExportTable must be a fully qualified table in the registered project.");
 }
 
@@ -195,6 +195,7 @@ export async function executeProviderBillingSync(input: {
   provider: CloudProvider; externalAccountId: string; organizationId: string; cloudAccountId: string; credentialRef: string | null;
 }): Promise<{ csv: string; totalRows: number }> {
   const secret = await resolveProviderSecret(input);
+  validateProviderSecret(input.provider, input.externalAccountId, secret);
   let rows: BillingRow[];
   if (input.provider === "AWS") rows = await syncAws(input.externalAccountId, secret);
   else if (input.provider === "AZURE") rows = await syncAzure(input.externalAccountId, secret);
