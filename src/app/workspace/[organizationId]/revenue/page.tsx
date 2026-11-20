@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { withOrganization } from "@/lib/tenant-context";
 import RevenueManager from "./revenue-manager";
+import { calculateFinancialPerformance } from "@/lib/financial-performance";
 
 function money(value: number, currency: string) {
   try { return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(value); }
@@ -59,13 +60,13 @@ export default async function RevenueEfficiencyPage({ params }: { params: Promis
       <section className="analytics-section"><div className="analytics-section-title"><h2>Financial performance by currency</h2><span>90 calendar days · no cross-currency conversion</span></div>
         <div className="analytics-kpis">{data.totals.map((item) => <article className="analytics-card" key={item.currency}><span>Reported revenue · {item.currency}</span><strong>{money(item.revenue, item.currency)}</strong><small>{item.revenueRecords} dated revenue groups</small></article>)}
           {data.totals.map((item) => <article className="analytics-card" key={"cost-"+item.currency}><span>Cloud spend · {item.currency}</span><strong>{money(item.spend, item.currency)}</strong><small>{item.costRecords.toLocaleString()} date groups</small></article>)}
-          {data.totals.map((item) => <article className="analytics-card" key={"contribution-"+item.currency}><span>Revenue less cloud spend · {item.currency}</span><strong>{money(item.revenue-item.spend, item.currency)}</strong><small>{item.revenue > 0 ? ((item.spend/item.revenue)*100).toFixed(1)+"% of revenue consumed by cloud" : "Revenue baseline not reported"}</small></article>)}
+          {data.totals.map((item) => <article className="analytics-card" key={"contribution-"+item.currency}><span>Revenue less cloud spend · {item.currency}</span><strong>{money(calculateFinancialPerformance(item.revenue,item.spend).cloudContribution, item.currency)}</strong><small>{item.revenue > 0 ? (calculateFinancialPerformance(item.revenue,item.spend).cloudCostToRevenuePercent?.toFixed(1) ?? "—")+"% of revenue consumed by cloud" : "Revenue baseline not reported"}</small></article>)}
         </div>
         {!data.totals.length ? <div className="analytics-empty"><h2>No financial source data yet</h2><p>Import billing records and record verified revenue to populate the comparison. The dashboard does not insert sample figures.</p></div> : null}
       </section>
       <section className="analytics-grid">
         <article className="analytics-panel"><div className="analytics-panel-heading"><div><h2>Monthly revenue vs cloud spend</h2><p>Actuals grouped by calendar month and currency</p></div></div>
-          {data.monthly.length ? <div className="budget-alert-table-wrap"><table className="budget-alert-table"><thead><tr><th>Month</th><th>Currency</th><th>Revenue</th><th>Cloud spend</th><th>Contribution</th></tr></thead><tbody>{data.monthly.map((row) => <tr key={row.month+row.currency}><td>{row.month}</td><td>{row.currency}</td><td>{money(row.revenue,row.currency)}</td><td>{money(row.spend,row.currency)}</td><td>{money(row.revenue-row.spend,row.currency)}</td></tr>)}</tbody></table></div> : <p className="analytics-muted">Monthly comparison will appear when source data is available.</p>}
+          {data.monthly.length ? <div className="budget-alert-table-wrap"><table className="budget-alert-table"><thead><tr><th>Month</th><th>Currency</th><th>Revenue</th><th>Cloud spend</th><th>Contribution</th></tr></thead><tbody>{data.monthly.map((row) => <tr key={row.month+row.currency}><td>{row.month}</td><td>{row.currency}</td><td>{money(row.revenue,row.currency)}</td><td>{money(row.spend,row.currency)}</td><td>{money(calculateFinancialPerformance(row.revenue,row.spend).cloudContribution,row.currency)}</td></tr>)}</tbody></table></div> : <p className="analytics-muted">Monthly comparison will appear when source data is available.</p>}
         </article>
         <article className="analytics-panel"><div className="analytics-panel-heading"><div><h2>Cost efficiency indicators</h2><p>Cloud spend divided by reported business volume</p></div></div>
           {data.metricTotals.length && data.totals.length ? data.totals.map((spend) => data.metricTotals.map((metric) => <div className="analytics-list-row" key={spend.currency+metric.metricName+metric.unit}><div><strong>{spend.currency} / {metric.metricName}</strong><span>{metric.value.toLocaleString("en-US",{maximumFractionDigits:4})} {metric.unit} reported</span></div><strong>{metric.value>0?money(spend.spend/metric.value,spend.currency):"—"}</strong></div>)) : <p className="analytics-muted">Add verified business volume observations in Unit economics to calculate cost per unit.</p>}
