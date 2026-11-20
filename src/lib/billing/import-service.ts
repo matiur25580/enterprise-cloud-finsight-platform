@@ -22,12 +22,12 @@ export type BillingImportResult = {
 export async function importBillingCsv(input: {
   organizationId: string;
   cloudAccountId: string;
-  actorUserId: string;
+  actorUserId?: string;
   fileName: string;
   csvText: string;
 }): Promise<BillingImportResult> {
   const { organizationId, cloudAccountId, actorUserId, fileName, csvText } = input;
-  if (!organizationId.trim() || !cloudAccountId.trim() || !actorUserId.trim()) {
+  if (!organizationId.trim() || !cloudAccountId.trim() || (actorUserId !== undefined && !actorUserId.trim())) {
     throw new Error("Verified organization, cloud account, and actor IDs are required.");
   }
   if (!fileName.toLowerCase().endsWith(".csv")) throw new Error("Only .csv files are accepted.");
@@ -39,14 +39,16 @@ export async function importBillingCsv(input: {
     });
     if (!account) throw new Error("Cloud account was not found in this organization.");
 
-    const membership = await tx.membership.findFirst({
-      where: { organizationId, userId: actorUserId }, select: { id: true }
-    });
-    if (!membership) throw new Error("The actor is not a member of this organization.");
+    if (actorUserId) {
+      const membership = await tx.membership.findFirst({
+        where: { organizationId, userId: actorUserId }, select: { id: true }
+      });
+      if (!membership) throw new Error("The actor is not a member of this organization.");
+    }
 
     const batch = await tx.importBatch.create({
       data: {
-        organizationId, cloudAccountId, uploadedByUserId: actorUserId,
+        organizationId, cloudAccountId, uploadedByUserId: actorUserId ?? null,
         fileName: fileName.slice(0, 255), status: ImportStatus.PROCESSING,
         totalRows: parsed.totalRows
       }
@@ -111,7 +113,7 @@ export async function importBillingCsv(input: {
     });
     await tx.auditLog.create({
       data: {
-        organizationId, actorUserId, action: "BILLING_CSV_IMPORTED",
+        organizationId, actorUserId: actorUserId ?? null, action: actorUserId ? "BILLING_CSV_IMPORTED" : "BILLING_PROVIDER_SYNC_IMPORTED",
         entityType: "ImportBatch", entityId: batch.id,
         metadata: {
           fileName: batch.fileName, totalRows: parsed.totalRows,
