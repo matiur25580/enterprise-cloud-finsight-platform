@@ -36,3 +36,6 @@ Apply the schema migration during deployment using `npx prisma migrate deploy`. 
 
 
 The persisted TOTP time-step counter uses PostgreSQL `BIGINT` / Prisma `BigInt` to avoid 32-bit integer overflow over the lifetime of the service. The counter is converted to a JavaScript `bigint` only at the database boundary; it is not exposed in API responses.
+
+
+MFA setup, confirmation, and disable endpoints also enforce an account-scoped 10-attempt/15-minute quota in addition to the client-network quota. The account bucket uses a keyed digest and does not persist the user identifier.

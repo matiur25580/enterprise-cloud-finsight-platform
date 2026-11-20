@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createTotpSecret, createTotpUri, encryptTotpSecret } from "@/lib/mfa";
 import { readLimitedJson } from "@/lib/request-body";
-import { enforceMfaRateLimit } from "@/lib/mfa-rate-limit";
+import { enforceMfaRateLimit, enforceMfaAccountRateLimit } from "@/lib/mfa-rate-limit";
 
 export const runtime = "nodejs";
 const schema = z.object({ password: z.string().min(8).max(128) });
@@ -17,6 +17,9 @@ export async function POST(request: Request) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+
+  const accountLimited = await enforceMfaAccountRateLimit(userId);
+  if (accountLimited) return accountLimited;
 
   const body = await readLimitedJson(request, 1024);
   if (!body.ok) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
