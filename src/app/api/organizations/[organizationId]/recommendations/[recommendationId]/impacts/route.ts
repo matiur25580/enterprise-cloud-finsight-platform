@@ -38,7 +38,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
         select: { id: true, title: true, status: true, currency: true, evidence: true, updatedAt: true }
       });
       if (!recommendation) return { kind: "NOT_FOUND" as const };
-      if (recommendation.status !== "IMPLEMENTED") return { kind: "NOT_IMPLEMENTED" as const };\n      const implementedOn = new Date(recommendation.updatedAt.toISOString().slice(0, 10) + "T00:00:00.000Z");\n      if (periods.baselineEnd.getTime() >= implementedOn.getTime() || periods.observedStart.getTime() <= implementedOn.getTime()) {\n        return { kind: "INVALID_IMPLEMENTATION_WINDOW" as const };\n      }
+      if (recommendation.status !== "IMPLEMENTED") return { kind: "NOT_IMPLEMENTED" as const };
+      const implementedOn = new Date(recommendation.updatedAt.toISOString().slice(0, 10) + "T00:00:00.000Z");
+      if (periods.baselineEnd.getTime() >= implementedOn.getTime() || periods.observedStart.getTime() <= implementedOn.getTime()) {
+        return { kind: "INVALID_IMPLEMENTATION_WINDOW" as const };
+      }
 
       const evidence = recommendation.evidence;
       const service = evidence && typeof evidence === "object" && !Array.isArray(evidence) &&
@@ -76,7 +80,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
       return { kind: "CREATED" as const, record, title: recommendation.title };
     });
     if (impact.kind === "NOT_FOUND") return NextResponse.json({ error: "Recommendation not found." }, { status: 404 });
-    if (impact.kind === "NOT_IMPLEMENTED") return NextResponse.json({ error: "Only implemented recommendations can be measured." }, { status: 409 });\n    if (impact.kind === "INVALID_IMPLEMENTATION_WINDOW") return NextResponse.json({ error: "The baseline must end before implementation, and the observed period must start after the implementation date." }, { status: 400 });
+    if (impact.kind === "NOT_IMPLEMENTED") return NextResponse.json({ error: "Only implemented recommendations can be measured." }, { status: 409 });
+    if (impact.kind === "INVALID_IMPLEMENTATION_WINDOW") return NextResponse.json({ error: "The baseline must end before implementation, and the observed period must start after the implementation date." }, { status: 400 });
     if (impact.kind === "INSUFFICIENT_DATA") return NextResponse.json({ error: "Both periods must contain imported billing records. Missing data is not treated as zero spend." }, { status: 422 });
     return NextResponse.json({ impact: { ...impact.record,
       baselineSpend: Number(impact.record.baselineSpend), observedSpend: Number(impact.record.observedSpend),
