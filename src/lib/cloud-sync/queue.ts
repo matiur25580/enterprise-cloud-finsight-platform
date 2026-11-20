@@ -22,26 +22,17 @@ export async function listCloudSyncJobs(organizationId: string, cloudAccountId: 
   }));
 }
 
-export async function updateSyncSchedule(input: { organizationId: string; cloudAccountId: string; enabled: boolean; intervalMinutes: number }) {
-  return withOrganization(prisma, input.organizationId, async (tx) => {
-    const account = await tx.cloudAccount.findFirst({ where: { id: input.cloudAccountId, organizationId: input.organizationId }, select: { id: true, status: true } });
-    if (!account) throw new Error("Cloud account not found in this organization.");
-    if (input.enabled && account.status !== "ACTIVE") throw new Error("Activate the cloud account before enabling scheduled sync.");
-    return tx.cloudAccount.update({ where: { id: account.id }, data: { syncEnabled: input.enabled, syncIntervalMinutes: input.intervalMinutes, nextSyncAt: input.enabled ? new Date(Date.now() + input.intervalMinutes * 60_000) : null }, select: { id: true, syncEnabled: true, syncIntervalMinutes: true, nextSyncAt: true } });
-  });
-}
-
-/** Atomically enqueue due accounts across tenants using a transaction-scoped worker RLS context. */
 export async function enqueueDueScheduledSyncs(limit = 50): Promise<number> {
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT set_config('app.is_sync_worker', 'true', true)`;
-    const due = await tx.$queryRaw<Array<{ id: string; organization_id: string; sync_interval_minutes: number }>>(Prisma.sql`
+    await tx.$executeRaw\`SELECT set_config('app.is_sync_worker', 'true', true)\`;
+    const due = await tx.$queryRaw<Array<{ id: string; organization_id: string; sync_interval_minutes: number }>>(Prisma.sql\`
       WITH candidates AS (
         SELECT id FROM cloud_accounts
         WHERE sync_enabled = true AND status = 'ACTIVE'
           AND next_sync_at IS NOT NULL AND next_sync_at <= NOW()
         ORDER BY next_sync_at ASC
-        FOR UPDATE SKIP LOCKED LIMIT ${limit}
+        LIMIT \${safeLimit} FOR UPDATE SKIP LOCKED
       )
       UPDATE cloud_accounts AS account
       SET next_sync_at = NOW() + make_interval(mins => account.sync_interval_minutes),
@@ -49,10 +40,13 @@ export async function enqueueDueScheduledSyncs(limit = 50): Promise<number> {
       FROM candidates
       WHERE account.id = candidates.id
       RETURNING account.id, account.organization_id, account.sync_interval_minutes
-    `);
+    \`);
     let queued = 0;
     for (const account of due) {
-      const pending = await tx.cloudSyncJob.findFirst({ where: { organizationId: account.organization_id, cloudAccountId: account.id, status: { in: [CloudSyncJobStatus.QUEUED, CloudSyncJobStatus.RUNNING] } }, select: { id: true } });
+      const pending = await tx.cloudSyncJob.findFirst({
+        where: { organizationId: account.organization_id, cloudAccountId: account.id, status: { in: [CloudSyncJobStatus.QUEUED, CloudSyncJobStatus.RUNNING] } },
+        select: { id: true }
+      });
       if (!pending) {
         await tx.cloudSyncJob.create({ data: { organizationId: account.organization_id, cloudAccountId: account.id, trigger: CloudSyncTrigger.SCHEDULED } });
         queued += 1;
