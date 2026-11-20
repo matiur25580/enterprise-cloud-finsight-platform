@@ -207,3 +207,8 @@ Organization members with the `audit:read` permission can open `/workspace/{orga
 ### Audit CSV export
 
 Users with `audit:read` can export organization-scoped cloud account and sync events from `/api/organizations/{organizationId}/audit/export`. Optional `from` and `to` ISO date-time parameters constrain the range (maximum 366 days); optional `action` performs a case-insensitive action substring filter. Exports are capped at 5,000 rows, marked private/no-store, and CSV cells are escaped against spreadsheet formula injection. This endpoint is an operational export, not a tamper-evident or immutable compliance archive.
+
+
+### Organization members and invitations
+
+Organization owners and administrators with `members:manage` can open `/workspace/{organizationId}/members` to review members, invite teammates by email, change permitted roles, and remove non-owner members. Invitations are single-use, expire after seven days, and are bound to the invited email address; invitees must sign in with that email before accepting. The invite API stores only a SHA-256 token hash, sends the raw token only through the configured Resend email provider, and records invitation, acceptance, role-change, and removal events in the organization audit log. Configure `RESEND_API_KEY`, `SYNC_ALERT_EMAIL_FROM`, and `NEXT_PUBLIC_APP_URL` on the web application to enable invitation delivery. Owners can invite administrators; administrators can invite analysts and viewers but cannot manage owner or peer-administrator accounts. Owner memberships are protected from role changes and removal. Apply the new `20261120190000_organization_invitations` migration before using this feature.
