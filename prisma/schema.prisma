@@ -254,9 +254,9 @@ model Recommendation {
   createdAt               DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt               DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization            Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  impacts                 RecommendationImpact[]
   @@index([organizationId, status, createdAt])
   @@unique([organizationId, id])
-  impacts                 RecommendationImpact[]
   @@map("recommendations")
 }
 
