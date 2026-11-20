@@ -25,7 +25,6 @@ export async function listCloudSyncJobs(organizationId: string, cloudAccountId: 
 export async function enqueueDueScheduledSyncs(limit = 50): Promise<number> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT set_config('app.is_sync_worker', 'true', true)`;
     const due = await tx.$queryRaw<Array<{ id: string; organization_id: string; sync_interval_minutes: number }>>(Prisma.sql`
       WITH candidates AS (
         SELECT id FROM cloud_accounts
