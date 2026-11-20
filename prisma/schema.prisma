@@ -94,6 +94,8 @@ model CloudAccount {
   status            CloudAccountStatus @default(ACTIVE)
   currency          String             @default("USD") @db.VarChar(3)
   lastSyncedAt      DateTime?          @map("last_synced_at") @db.Timestamptz(6)
+  lastSyncAttemptAt DateTime?          @map("last_sync_attempt_at") @db.Timestamptz(6)
+  credentialRef     String?            @map("credential_ref") @db.VarChar(500)
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
