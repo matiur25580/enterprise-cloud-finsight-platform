@@ -2,17 +2,11 @@ import { CostExplorerClient, GetCostAndUsageCommand } from "@aws-sdk/client-cost
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import { GoogleAuth } from "google-auth-library";
 import type { CloudProvider } from "@prisma/client";
+import { ProviderApiError, ProviderCredentialConfigurationError } from "./errors";
+import { resolveVaultKv2Secret } from "./secret-resolver";
 
 type BillingRow = { service: string; amount: string; currency: string; usageDate: string; region?: string };
 type Secret = Record<string, unknown>;
-export class ProviderCredentialConfigurationError extends Error {
-  readonly code = "PROVIDER_CREDENTIALS_NOT_CONFIGURED";
-  constructor(message: string) { super(message); this.name = "ProviderCredentialConfigurationError"; }
-}
-export class ProviderApiError extends Error {
-  readonly code = "PROVIDER_API_ERROR";
-  constructor(message: string) { super(message); this.name = "ProviderApiError"; }
-}
 const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 function dateWindow() {
   const end = new Date(); end.setUTCHours(0, 0, 0, 0);
@@ -37,9 +31,13 @@ function rowsToCsv(rows: BillingRow[]) {
 }
 
 async function resolveProviderSecret(input: { credentialRef: string | null; provider: CloudProvider; organizationId: string; cloudAccountId: string }): Promise<Secret> {
+  if (!input.credentialRef) throw new ProviderCredentialConfigurationError("Configure a per-account secret-manager reference before enabling live sync.");
+  if (process.env.SECRET_MANAGER_BACKEND?.toLowerCase() === "vault") {
+    return resolveVaultKv2Secret(input.credentialRef);
+  }
   const endpoint = process.env.SECRET_RESOLVER_URL;
   const token = process.env.SECRET_RESOLVER_TOKEN;
-  if (!input.credentialRef || !endpoint || !token) throw new ProviderCredentialConfigurationError("Configure a per-account secret reference and the worker secret-resolver endpoint before enabling live sync.");
+  if (!endpoint || !token) throw new ProviderCredentialConfigurationError("Configure SECRET_MANAGER_BACKEND=vault with Vault worker credentials, or configure the external secret-resolver endpoint and token.");
   let url: URL;
   try { url = new URL(endpoint); } catch { throw new ProviderCredentialConfigurationError("SECRET_RESOLVER_URL must be a valid HTTPS URL."); }
   if ((url.protocol !== "https:" && process.env.NODE_ENV !== "development") || url.username || url.password || url.hash || url.search) throw new ProviderCredentialConfigurationError("SECRET_RESOLVER_URL must be an HTTPS endpoint without embedded credentials or query parameters.");
