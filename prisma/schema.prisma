@@ -203,7 +203,7 @@ model ImportBatch {
   id               String       @id @default(cuid())
   organizationId   String       @map("organization_id")
   cloudAccountId   String       @map("cloud_account_id")
-  uploadedByUserId String       @map("uploaded_by_user_id")
+  uploadedByUserId String?      @map("uploaded_by_user_id")
   fileName         String       @map("file_name") @db.VarChar(255)
   status           ImportStatus @default(PROCESSING)
   totalRows        Int          @default(0) @map("total_rows")
@@ -214,7 +214,7 @@ model ImportBatch {
   completedAt      DateTime?    @map("completed_at") @db.Timestamptz(6)
   organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   cloudAccount     CloudAccount @relation(fields: [organizationId, cloudAccountId], references: [organizationId, id], onDelete: Cascade)
-  uploadedBy       User         @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  uploadedBy       User?        @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   costRecords      CostRecord[]
   issues           ImportIssue[]
   @@index([organizationId, createdAt(sort: Desc)])
@@ -265,6 +265,10 @@ model CloudSyncJob {
   completedAt      DateTime?          @map("completed_at") @db.Timestamptz(6)
   errorCode        String?            @map("error_code") @db.VarChar(100)
   errorMessage     String?            @map("error_message") @db.VarChar(1000)
+  totalRows        Int                @default(0) @map("total_rows")
+  importedRows     Int                @default(0) @map("imported_rows")
+  rejectedRows     Int                @default(0) @map("rejected_rows")
+  duplicateRows    Int                @default(0) @map("duplicate_rows")
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
