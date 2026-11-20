@@ -24,6 +24,15 @@ testCase("PostgreSQL enforces single-use recovery codes and protects concurrent 
     await prisma.mfaRecoveryCode.create({
       data: { userId, codeHash: recoveryCodeHash }
     });
+    await prisma.userSecurityEvent.create({
+      data: { userId, eventType: "MFA_ENABLE", outcome: "FAILURE", reason: "INVALID_TOTP" }
+    });
+    const auditEvent = await prisma.userSecurityEvent.findFirstOrThrow({
+      where: { userId, eventType: "MFA_ENABLE" }
+    });
+    assert.equal(auditEvent.outcome, "FAILURE");
+    assert.equal(auditEvent.reason, "INVALID_TOTP");
+    assert.equal(JSON.stringify(auditEvent).includes(recoveryCode), false);
 
     const attempts = await Promise.all([
       prisma.mfaRecoveryCode.updateMany({
