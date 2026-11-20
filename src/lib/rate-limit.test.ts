@@ -74,3 +74,15 @@ test("uses a development-only fallback when no secret is configured", () => {
     "finsight-development-rate-limit-key"
   );
 });
+
+
+test("registration policy permits five account creations per hour and blocks the sixth", () => {
+  const startedAt = new Date("2026-11-20T10:00:00.000Z");
+  const allowed = getRateLimitDecision(5, 5, startedAt, 60 * 60);
+  const blocked = getRateLimitDecision(6, 5, startedAt, 60 * 60);
+  assert.equal(allowed.allowed, true);
+  assert.equal(allowed.remaining, 0);
+  assert.equal(allowed.resetAt.toISOString(), "2026-11-20T11:00:00.000Z");
+  assert.equal(blocked.allowed, false);
+  assert.equal(blocked.remaining, 0);
+});
