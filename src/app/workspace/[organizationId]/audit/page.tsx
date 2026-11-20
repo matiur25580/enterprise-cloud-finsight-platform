@@ -26,7 +26,8 @@ function describeAction(action: string): string {
     BUDGET_FORECAST_SNAPSHOT_CAPTURED: "Budget forecast snapshot captured",
     SHARED_COST_ALLOCATION_RULE_CREATED: "Shared cost allocation rule created",
     SHARED_COST_ALLOCATION_RULE_STATUS_CHANGED: "Shared cost allocation rule status changed",
-    SHARED_COST_ALLOCATION_APPLIED: "Shared cost allocation applied"
+    SHARED_COST_ALLOCATION_APPLIED: "Shared cost allocation applied",
+    BUSINESS_METRIC_RECORDED: "Business volume metric recorded"
   };
   return labels[action] ?? action.replaceAll("_", " ").toLowerCase();
 }
@@ -35,7 +36,7 @@ export default async function AuditPage({ params }: { params: Promise<{ organiza
   const { organizationId } = await params;
   await requireOrganizationPermission(organizationId, "audit:read");
   const events = await withOrganization(prisma, organizationId, (tx) => tx.auditLog.findMany({
-    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation", "Organization", "Budget"] } },
+    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation", "Organization", "Budget", "BusinessMetric"] } },
     orderBy: { createdAt: "desc" },
     take: 100,
     select: {
