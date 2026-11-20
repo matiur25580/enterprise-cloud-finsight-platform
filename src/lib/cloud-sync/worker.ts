@@ -8,7 +8,6 @@ type ClaimedJob = { id: string; organization_id: string; cloud_account_id: strin
 
 export async function claimNextCloudSyncJob(): Promise<ClaimedJob | null> {
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT set_config('app.is_sync_worker', 'true', true)`;
     await tx.$executeRaw`
       UPDATE cloud_sync_jobs
       SET status = 'FAILED', completed_at = NOW(), error_code = 'WORKER_LEASE_EXPIRED',
