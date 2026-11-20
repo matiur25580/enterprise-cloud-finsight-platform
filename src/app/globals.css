@@ -454,3 +454,63 @@ h1 { margin: 0; color: #24263a; font-size: 25px; font-weight: 700; letter-spacin
 .budget-forecast-bottom b { color: #55576b; font-weight: 650; }
 .budget-forecast-disclaimer { margin: 13px 2px; color: #9294a4; font-size: 9px; line-height: 1.6; }
 @media (max-width: 700px) { .budget-forecast-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .budget-forecast-top { align-items: flex-start; } }
+
+
+/* Grouped workspace navigation */
+.analytics-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 12px;
+  border: 1px solid #e9e8f1;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #fbfaff 100%);
+}
+.analytics-nav-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+  border-right: 1px solid #ecebf3;
+}
+.analytics-nav-group > span {
+  width: 100%;
+  padding: 0 7px 2px;
+  color: #a0a1b0;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.analytics-nav .analytics-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 29px;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #68627f;
+  font-size: 10px;
+  font-weight: 600;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.analytics-nav .analytics-back:hover {
+  border-color: #e3defe;
+  color: #5f51c4;
+  background: #f3f1ff;
+}
+.analytics-nav .analytics-workspaces-link {
+  align-self: center;
+  margin-left: auto;
+  border-color: #e7e6ef;
+  background: #fff;
+}
+@media (max-width: 760px) {
+  .analytics-nav { gap: 12px; padding: 10px; }
+  .analytics-nav-group { width: 100%; padding: 0 0 9px; border-right: 0; border-bottom: 1px solid #efedf5; }
+  .analytics-nav-group > span { margin-bottom: 2px; }
+  .analytics-nav .analytics-workspaces-link { margin-left: 0; }
+}
