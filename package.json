@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/billing/csv.test.ts src/lib/permissions.test.ts",
+    "test": "tsx --test src/lib/billing/csv.test.ts src/lib/permissions.test.ts src/lib/analytics.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
