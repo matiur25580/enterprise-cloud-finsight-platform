@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { withUserContext } from "@/lib/user-context";
 import { importBillingCsv } from "@/lib/billing/import-service";
 import { hasPermission } from "@/lib/permissions";
+import { consumeApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -19,6 +20,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
     if (!membership || !hasPermission(membership.role, "billing:import")) {
       return NextResponse.json({ error: "You do not have permission to import billing data." }, { status: 403 });
     }
+  const rateLimit = await consumeApiRateLimit({
+    organizationId,
+    userId: session.user.id,
+    bucket: "billing:csv-import",
+    limit: 5,
+    windowSeconds: 900
+  });
+  const limitedResponse = rateLimitResponse(rateLimit);
+  if (limitedResponse) return limitedResponse;
     const form = await request.formData();
     const upload = form.get("file");
     const cloudAccountId = form.get("cloudAccountId");
