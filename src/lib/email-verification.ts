@@ -18,8 +18,15 @@ export function hashEmailVerificationToken(token: string): string {
 }
 
 export function isEmailDeliveryConfigured(environment: NodeJS.ProcessEnv = process.env): boolean {
-  return Boolean(environment.RESEND_API_KEY && environment.EMAIL_FROM &&
-    (environment.APP_URL || environment.NEXT_PUBLIC_APP_URL));
+  const baseUrl = environment.APP_URL || environment.NEXT_PUBLIC_APP_URL;
+  if (!environment.RESEND_API_KEY || !environment.EMAIL_FROM || !baseUrl ||
+      environment.EMAIL_FROM.includes("your-verified-domain.example")) return false;
+  try {
+    const url = new URL(baseUrl);
+    return environment.NODE_ENV !== "production" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export async function sendEmailVerification(to: string, token: string): Promise<void> {
