@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrganizationPermission } from "@/lib/auth-guards";
 import type { MembershipRole } from "@prisma/client";
+import { hasPermission } from "@/lib/permissions";
 import { getCostAnalytics } from "@/lib/analytics";
 import type { AnalyticsRange } from "@/lib/analytics-math";
 
@@ -62,7 +63,7 @@ export default async function OrganizationDashboard({
             <h1>Cost intelligence</h1>
             <p className="analytics-subtitle">{organizationName} · {analytics.startDate} to {analytics.endDate}</p>
           </div>
-          <div className="flex gap-3"><Link className="analytics-back" href={"/workspace/" + organizationId + "/cloud-accounts"}>Cloud accounts</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/billing"}>Import billing CSV</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/insights"}>Anomalies & optimization</Link><Link className="analytics-back" href="/workspace">All workspaces</Link></div>
+          <div className="flex gap-3">{hasPermission(access.membership.role, "members:manage") ? <Link className="analytics-back" href={"/workspace/" + organizationId + "/members"}>Members & access</Link> : null}<Link className="analytics-back" href={"/workspace/" + organizationId + "/cloud-accounts"}>Cloud accounts</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/billing"}>Import billing CSV</Link><Link className="analytics-back" href={"/workspace/" + organizationId + "/insights"}>Anomalies & optimization</Link><Link className="analytics-back" href="/workspace">All workspaces</Link></div>
         </div>
 
         <nav className="analytics-ranges" aria-label="Analytics date range">
