@@ -37,7 +37,7 @@ export default async function AuditPage({ params }: { params: Promise<{ organiza
   const { organizationId } = await params;
   await requireOrganizationPermission(organizationId, "audit:read");
   const events = await withOrganization(prisma, organizationId, (tx) => tx.auditLog.findMany({
-    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation", "Organization", "Budget", "BusinessMetric", "RevenueRecord"] } },
+    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation", "Organization", "Budget", "BusinessMetric", "RevenueRecord", "Recommendation"] } },
     orderBy: { createdAt: "desc" },
     take: 100,
     select: {
