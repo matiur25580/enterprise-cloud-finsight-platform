@@ -183,6 +183,17 @@ Store each account's provider secret in KV v2 and set its FinSight credential re
 Use a dedicated Vault policy scoped to exact secret paths, short-lived tokens or workload identity where available, TLS, rotation, and Vault audit devices. Never grant the worker broad list/write/delete access. If you prefer an independently hosted resolver, leave `SECRET_MANAGER_BACKEND` unset and configure `SECRET_RESOLVER_URL` plus `SECRET_RESOLVER_TOKEN`; the existing organization/account-aware resolver contract remains supported.
 
 
+### Cloud sync alerts
+
+The background worker can send terminal sync failures/blocked-credential alerts and recovery notices to Slack and/or email. Configure on the worker only:
+
+- `SLACK_SYNC_ALERT_WEBHOOK_URL`: Slack incoming webhook URL (HTTPS Slack webhook hosts only).
+- `RESEND_API_KEY`: Resend API key for email delivery.
+- `SYNC_ALERT_EMAIL_FROM`: verified sender address in Resend.
+- `SYNC_ALERT_EMAIL_TO`: comma-separated recipient addresses.
+
+At least one delivery channel must be configured. Alerts include the cloud account label, provider, status, stable error code, attempt count, and row counts; raw provider error messages and credential material are not sent. Transient job retries do not page; alerts are sent when a job becomes BLOCKED or reaches terminal FAILED, and a later successful sync after a prior failed/blocked job emits a recovery notice. Delivery is best-effort: provider/network failures do not change billing job state, and delivery is not a durable outbox. Monitor the worker logs/health dashboard and configure provider-side delivery monitoring for production.
+
 ### Cloud sync health dashboard
 
 Organization members with `cloud:read` permission can open `/workspace/<organizationId>/cloud-accounts/health` to inspect tenant-scoped sync job totals (queued, running, succeeded, failed, blocked), account schedule and secret-reference readiness, and the latest 50 sync outcomes. The page intentionally displays stable error codes rather than raw provider error messages, which may contain sensitive response details. Counts are derived from persisted job records and do not imply that an external provider or worker is currently reachable.
