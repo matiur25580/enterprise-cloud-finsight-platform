@@ -60,7 +60,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
       const realizedSavings = calculateRealizedSavings(baselineSpend, observedSpend);
       const record = await tx.recommendationImpact.create({ data: {
         organizationId, recommendationId, currency: recommendation.currency,
-        scope: service ? "Service: " + service : "Organization-wide cloud spend",
+        scope: service ? ("Service: " + service).slice(0, 160) : "Organization-wide cloud spend",
         baselineStartsAt: periods.baselineStart, baselineEndsAt: periods.baselineEnd,
         observedStartsAt: periods.observedStart, observedEndsAt: periods.observedEnd,
         periodDays: periods.periodDays, baselineSpend, observedSpend, realizedSavings,
