@@ -50,6 +50,20 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 
 Tenant-owned tables use PostgreSQL Row-Level Security. Server code must obtain the organization ID from a verified membership and execute tenant queries through `withOrganization` in `src/lib/tenant-context.ts`. The runtime database role must not be a superuser or have `BYPASSRLS`; production should use a separate migration owner and restricted runtime role.
 
+## CSV billing import format
+
+The ingestion parser accepts UTF-8 CSV files up to 5 MB and 20,000 data rows. Required headers are `service`, `amount`, `currency`, and `usageDate` (ISO date: `YYYY-MM-DD`). Optional headers include `externalId`, `region`, `usageType`, `resourceId`, and custom tag columns such as `tag:team` or `tag:environment`. Amounts support up to 8 decimal places and currencies must be 3-letter codes.
+
+Example:
+
+```csv
+service,amount,currency,usageDate,region,externalId,tag:team
+Compute,12.34000000,USD,2026-11-01,ap-south-1,aws-line-001,platform
+Object Storage,4.25000000,USD,2026-11-01,ap-south-1,aws-line-002,data
+```
+
+The import service is a server-only domain operation. An authenticated upload route/UI is intentionally deferred until session authentication is implemented; do not accept organization or actor IDs directly from browser input.
+
 ## Local development
 
 Requirements: Node.js 20.9+ and PostgreSQL.
