@@ -29,13 +29,12 @@ Each recovery code is single-use. If codes are lost or exposed, sign in with an 
 - TOTP time steps are stored per user and consumed with a conditional atomic database update. A six-digit code can be accepted only once, including under concurrent sign-in attempts.
 - Recovery-code consumption is an atomic database update, preventing the same code from being used twice concurrently.
 - MFA enrollment records the confirmation code's time step, preventing that same code from immediately being reused for sign-in.
+- MFA disable uses a compare-and-set update against the exact encrypted secret and enabled timestamp that were verified. If the configuration changes concurrently, the stale disable request returns HTTP 409 and does not delete recovery codes.
 - Enrollment, confirmation, rotation, and disable operations require password reauthentication.
 - Existing accounts are not forced to enable MFA. Email verification remains a separate requirement for new registrations.
 
 Apply the schema migration during deployment using `npx prisma migrate deploy`. Keep `AUTH_SECRET` configured on every web instance; changing it without a coordinated key migration will make existing encrypted MFA secrets unreadable.
 
-
 The persisted TOTP time-step counter uses PostgreSQL `BIGINT` / Prisma `BigInt` to avoid 32-bit integer overflow over the lifetime of the service. The counter is converted to a JavaScript `bigint` only at the database boundary; it is not exposed in API responses.
-
 
 MFA setup, confirmation, and disable endpoints also enforce an account-scoped 10-attempt/15-minute quota in addition to the client-network quota. The account bucket uses a keyed digest and does not persist the user identifier.

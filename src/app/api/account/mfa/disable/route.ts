@@ -42,12 +42,25 @@ export async function POST(request: Request) {
   const valid = await verifyAndConsumeMfaFactor(userId, user.mfaSecretEncrypted, parsed.data.code);
   if (!valid) return NextResponse.json({ error: "Authenticator or recovery code is incorrect." }, { status: 403 });
 
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: userId },
+  const disabled = await prisma.$transaction(async (tx) => {
+    // Compare-and-set against the exact MFA configuration that was verified above.
+    // A concurrent re-enrollment must never be cleared by this stale disable request.
+    const updated = await tx.user.updateMany({
+      where: {
+        id: userId,
+        mfaEnabledAt: user.mfaEnabledAt,
+        mfaSecretEncrypted: user.mfaSecretEncrypted
+      },
       data: { mfaEnabledAt: null, mfaSecretEncrypted: null, mfaLastUsedTimeStep: null }
     });
+    if (updated.count !== 1) return false;
+
     await tx.mfaRecoveryCode.deleteMany({ where: { userId } });
+    return true;
   });
+
+  if (!disabled) {
+    return NextResponse.json({ error: "MFA settings changed. Refresh and try again." }, { status: 409 });
+  }
   return NextResponse.json({ disabled: true });
 }
