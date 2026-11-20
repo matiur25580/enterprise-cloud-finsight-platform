@@ -13,6 +13,7 @@ function describeAction(action: string): string {
     CLOUD_SYNC_BLOCKED: "Sync blocked by configuration",
     CLOUD_ACCOUNT_CREATED: "Cloud account registered",
     CLOUD_ACCOUNT_UPDATED: "Cloud account settings updated",
+    ORGANIZATION_SETTINGS_UPDATED: "Workspace profile updated",
     ORGANIZATION_INVITATION_SENT: "Organization invitation sent",
     ORGANIZATION_INVITATION_ACCEPTED: "Organization invitation accepted",
     ORGANIZATION_MEMBER_ROLE_UPDATED: "Member role updated",
@@ -25,7 +26,7 @@ export default async function AuditPage({ params }: { params: Promise<{ organiza
   const { organizationId } = await params;
   await requireOrganizationPermission(organizationId, "audit:read");
   const events = await withOrganization(prisma, organizationId, (tx) => tx.auditLog.findMany({
-    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation"] } },
+    where: { entityType: { in: ["CloudSyncJob", "CloudAccount", "Membership", "OrganizationInvitation", "Organization"] } },
     orderBy: { createdAt: "desc" },
     take: 100,
     select: {
