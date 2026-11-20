@@ -29,6 +29,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
       const target = await tx.membership.findFirst({ where: { id: membershipId, organizationId }, select: { id: true, role: true, userId: true } });
       if (!target) throw new Error("NOT_FOUND");
       if (target.role === "OWNER") throw new Error("OWNER_PROTECTED");
+      if (actor.role === "ADMIN" && target.role === "ADMIN") throw new Error("ADMIN_PROTECTED");
       const updated = await tx.membership.update({ where: { id: target.id }, data: { role: parsed.data.role }, select: { id: true, role: true, user: { select: { email: true } } } });
       await tx.auditLog.create({ data: { organizationId, actorUserId: session.user.id, action: "ORGANIZATION_MEMBER_ROLE_UPDATED", entityType: "Membership", entityId: target.id, metadata: { previousRole: target.role, newRole: parsed.data.role, memberEmail: updated.user.email } } });
       return updated;
@@ -38,6 +39,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
     const message = error instanceof Error ? error.message : "";
     if (message === "NOT_FOUND") return NextResponse.json({ error: "Member not found." }, { status: 404 });
     if (message === "OWNER_PROTECTED") return NextResponse.json({ error: "Owner accounts are protected from role changes." }, { status: 409 });
+    if (message === "ADMIN_PROTECTED") return NextResponse.json({ error: "Administrators cannot manage another administrator." }, { status: 403 });
     return NextResponse.json({ error: "Unable to update member role." }, { status: 400 });
   }
 }
@@ -53,6 +55,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       const target = await tx.membership.findFirst({ where: { id: membershipId, organizationId }, select: { id: true, role: true, userId: true, user: { select: { email: true } } } });
       if (!target) throw new Error("NOT_FOUND");
       if (target.role === "OWNER") throw new Error("OWNER_PROTECTED");
+      if (actor.role === "ADMIN" && target.role === "ADMIN") throw new Error("ADMIN_PROTECTED");
       if (target.userId === session.user.id) throw new Error("SELF_REMOVE");
       await tx.membership.delete({ where: { id: target.id } });
       await tx.auditLog.create({ data: { organizationId, actorUserId: session.user.id, action: "ORGANIZATION_MEMBER_REMOVED", entityType: "Membership", entityId: target.id, metadata: { memberEmail: target.user.email, previousRole: target.role } } });
@@ -62,6 +65,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const message = error instanceof Error ? error.message : "";
     if (message === "NOT_FOUND") return NextResponse.json({ error: "Member not found." }, { status: 404 });
     if (message === "OWNER_PROTECTED") return NextResponse.json({ error: "Owner accounts cannot be removed." }, { status: 409 });
+    if (message === "ADMIN_PROTECTED") return NextResponse.json({ error: "Administrators cannot remove another administrator." }, { status: 403 });
     if (message === "SELF_REMOVE") return NextResponse.json({ error: "Use a different administrator to remove your own membership." }, { status: 409 });
     return NextResponse.json({ error: "Unable to remove member." }, { status: 400 });
   }
