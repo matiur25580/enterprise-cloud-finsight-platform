@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { consumeRegistrationRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { readLimitedJson } from "@/lib/request-body";
+import { createEmailVerificationToken, isEmailDeliveryConfigured, sendEmailVerification } from "@/lib/email-verification";
 
 export const runtime = "nodejs";
 
@@ -66,6 +67,12 @@ export async function POST(request: Request) {
   }
 
   const { name, organizationName, email, password } = parsed.data;
+  if (!isEmailDeliveryConfigured()) {
+    return NextResponse.json(
+      { error: "Email verification is not configured. Please contact the workspace administrator." },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
+    );
+  }
   const normalizedEmail = email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } });
   if (existing) {
@@ -77,6 +84,7 @@ export async function POST(request: Request) {
   const userId = randomUUID();
   const slugBase = organizationName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48) || "workspace";
   const slug = slugBase + "-" + organizationId.slice(0, 8);
+  const verification = createEmailVerificationToken();
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -92,10 +100,22 @@ export async function POST(request: Request) {
       await tx.membership.create({
         data: { organizationId, userId, role: "OWNER" }
       });
+      await tx.emailVerificationToken.create({
+        data: { tokenHash: verification.tokenHash, userId, expiresAt: verification.expiresAt }
+      });
     });
   } catch {
     return NextResponse.json({ error: "Unable to create this account. Check the details or try again." }, { status: 409 });
   }
 
-  return NextResponse.json({ created: true }, { status: 201 });
+  try {
+    await sendEmailVerification(normalizedEmail, verification.token);
+    return NextResponse.json({ created: true, verificationEmailSent: true }, { status: 201 });
+  } catch {
+    // Keep the account unverified; the user can request a fresh email.
+    return NextResponse.json(
+      { created: true, verificationEmailSent: false, message: "Your account was created, but the verification email could not be delivered. Request a new email to continue." },
+      { status: 201, headers: { "Cache-Control": "no-store" } }
+    );
+  }
 }
