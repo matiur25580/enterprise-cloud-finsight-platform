@@ -12,6 +12,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - Responsive dashboard shell with explicitly illustrative sample values.
 - PostgreSQL schema for organizations, users, memberships, cloud accounts, cost records, budgets, audit logs, and recommendations.
 - Organization-scoped PostgreSQL Row-Level Security policies and a transaction helper for tenant context.
+- CSV billing parser with strict validation, row-level error capture, stable fingerprints, duplicate-safe inserts, and import audit history.
 - GitHub Actions workflow for linting, TypeScript checks, and builds.
 
 ## Planned capabilities
@@ -45,6 +46,7 @@ FinSight is a cloud financial operations (FinOps) platform designed to help engi
 - `Budget` stores date-bounded budgets and alert thresholds.
 - `AuditLog` stores attributable, organization-scoped events.
 - `Recommendation` stores evidence-backed optimization opportunities and review status.
+- `ImportBatch` and `ImportIssue` track source files, row outcomes, and validation errors.
 
 Tenant-owned tables use PostgreSQL Row-Level Security. Server code must obtain the organization ID from a verified membership and execute tenant queries through `withOrganization` in `src/lib/tenant-context.ts`. The runtime database role must not be a superuser or have `BYPASSRLS`; production should use a separate migration owner and restricted runtime role.
 
@@ -74,7 +76,7 @@ For an already provisioned database, use `npm run db:deploy`. Never commit `.env
 
 - [x] Phase 1 — Application foundation and CI workflow.
 - [x] Phase 2 foundation — Initial database schema, migration, and tenant-scoped access helper.
-- [ ] Phase 3 — Validated CSV ingestion, import history, deduplication, and source traceability.
+- [x] Phase 3 foundation — CSV parsing/validation, import history, row issues, idempotent fingerprints, and audit events. Authenticated upload UI/API remains outstanding until authentication is implemented.
 - [ ] Phase 4 — Cost aggregation, allocation, dashboard queries, and reporting.
 - [ ] Phase 5 — Anomaly detection, forecasting, and evidence-backed recommendations.
 - [ ] Phase 6 — Secure cloud provider integrations.
