@@ -4,8 +4,29 @@ import { withOrganization } from "@/lib/tenant-context";
 import { importBillingCsv } from "@/lib/billing/import-service";
 import { executeProviderBillingSync } from "./provider-adapters";
 import { ProviderCredentialConfigurationError } from "./errors";
+import { deliverSyncAlert } from "./notifications";
 
 type ClaimedJob = { id: string; organization_id: string; cloud_account_id: string; attempt_count: number; max_attempts: number };
+
+async function notifyTerminalOutcome(job: ClaimedJob, status: "FAILED" | "BLOCKED" | "RECOVERED", details: {
+  errorCode?: string | null; importedRows?: number; rejectedRows?: number; duplicateRows?: number;
+} = {}): Promise<void> {
+  try {
+    const account = await withOrganization(prisma, job.organization_id, (tx) => tx.cloudAccount.findFirst({
+      where: { id: job.cloud_account_id, organizationId: job.organization_id },
+      select: { name: true, provider: true }
+    }));
+    if (!account) return;
+    await deliverSyncAlert({
+      status, provider: account.provider, accountName: account.name,
+      errorCode: details.errorCode, attemptCount: job.attempt_count,
+      importedRows: details.importedRows, rejectedRows: details.rejectedRows,
+      duplicateRows: details.duplicateRows
+    });
+  } catch {
+    // Alert delivery and lookup are best-effort; never roll back or reclassify a sync job.
+  }
+}
 
 export async function claimNextCloudSyncJob(): Promise<ClaimedJob | null> {
   return prisma.$transaction(async (tx) => {
@@ -39,7 +60,7 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
   try {
     const account = await withOrganization(prisma, job.organization_id, (tx) => tx.cloudAccount.findFirst({
       where: { id: job.cloud_account_id, organizationId: job.organization_id },
-      select: { provider: true, externalAccountId: true, status: true, credentialRef: true, currency: true }
+      select: { provider: true, externalAccountId: true, status: true, credentialRef: true, currency: true, name: true }
     }));
     if (!account || account.status !== "ACTIVE") throw new Error("Cloud account is no longer active.");
     const result = await executeProviderBillingSync({
@@ -53,6 +74,10 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
       csvText: result.csv
     });
     const completelyRejected = imported.totalRows > 0 && imported.importedRows === 0 && imported.duplicateRows === 0;
+    const previousJob = completelyRejected ? null : await withOrganization(prisma, job.organization_id, (tx) => tx.cloudSyncJob.findFirst({
+      where: { organizationId: job.organization_id, cloudAccountId: job.cloud_account_id, id: { not: job.id } },
+      orderBy: { createdAt: "desc" }, select: { status: true }
+    }));
     await withOrganization(prisma, job.organization_id, async (tx) => {
       await tx.cloudSyncJob.update({
         where: { id: job.id },
@@ -67,6 +92,11 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
       });
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncedAt: completelyRejected ? undefined : new Date(), lastSyncAttemptAt: new Date() } });
     });
+    if (completelyRejected) {
+      await notifyTerminalOutcome(job, "FAILED", { errorCode: "BILLING_ROWS_REJECTED", importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows });
+    } else if (previousJob && [CloudSyncJobStatus.FAILED, CloudSyncJobStatus.BLOCKED].includes(previousJob.status)) {
+      await notifyTerminalOutcome(job, "RECOVERED", { importedRows: imported.importedRows, rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows });
+    }
   } catch (error) {
     const blocked = error instanceof ProviderCredentialConfigurationError;
     const message = error instanceof Error ? error.message : "Cloud billing synchronization failed.";
@@ -84,5 +114,8 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
       });
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncAttemptAt: new Date() } });
     });
+    if (blocked || !retry) {
+      await notifyTerminalOutcome(job, blocked ? "BLOCKED" : "FAILED", { errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED" });
+    }
   }
 }
