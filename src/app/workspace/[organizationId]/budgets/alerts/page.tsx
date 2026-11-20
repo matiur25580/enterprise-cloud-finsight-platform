@@ -34,7 +34,7 @@ export default async function BudgetAlertsPage({ params }: { params: Promise<{ o
       attempted: typeof metadata.attempted === "number" ? metadata.attempted : 0,
       delivered: typeof metadata.delivered === "number" ? metadata.delivered : 0,
       channels: Array.isArray(metadata.channels) ? metadata.channels.filter((item): item is string => typeof item === "string") : [],
-      createdAt: event.createdAt
+      createdAt: event.createdAt, retryCount: typeof metadata.retryCount === "number" ? metadata.retryCount : 0
     };
   });
   const delivered = alerts.filter((alert) => alert.status === "DELIVERED").length;
