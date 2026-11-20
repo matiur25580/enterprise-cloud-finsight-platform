@@ -53,3 +53,7 @@ CREATE POLICY "shared_cost_allocation_runs_tenant_policy"
   ON "shared_cost_allocation_runs"
   USING ("organization_id" = current_setting('app.current_org_id', true))
   WITH CHECK ("organization_id" = current_setting('app.current_org_id', true));
+
+CREATE UNIQUE INDEX "shared_cost_allocation_rules_active_match_key"
+  ON "shared_cost_allocation_rules"("organization_id", LOWER("service_pattern"), "source_tag_key", "source_tag_value")
+  WHERE "is_active" = true;
