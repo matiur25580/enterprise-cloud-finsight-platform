@@ -33,7 +33,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
       startsAt: typeof metadata.startsAt === "string" ? metadata.startsAt : "",
       endsAt: typeof metadata.endsAt === "string" ? metadata.endsAt : "",
       deliveryStatus: typeof metadata.deliveryStatus === "string" ? metadata.deliveryStatus : "PENDING",
-      attempted: typeof metadata.attempted === "number" ? metadata.attempted : 0,\n      retryCount: typeof metadata.retryCount === "number" ? metadata.retryCount : 0,\n      lastAttemptAt: typeof metadata.lastAttemptAt === "string" ? metadata.lastAttemptAt : null,
+      attempted: typeof metadata.attempted === "number" ? metadata.attempted : 0,
+      retryCount: typeof metadata.retryCount === "number" ? metadata.retryCount : 0,\n      lastAttemptAt: typeof metadata.lastAttemptAt === "string" ? metadata.lastAttemptAt : null,
       delivered: typeof metadata.delivered === "number" ? metadata.delivered : 0,
       channels: Array.isArray(metadata.channels) ? metadata.channels.filter((item): item is string => typeof item === "string") : []
     };
