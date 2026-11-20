@@ -164,21 +164,31 @@ async function syncGcp(externalAccountId: string, secret: Secret): Promise<Billi
   if (!accessToken.token) throw new ProviderApiError("Google authentication did not return an access token.");
   const window = dateWindow();
   const sql = "SELECT DATE(usage_start_time) AS usage_date, service.description AS service, currency, location.region AS region, SUM(cost) AS amount FROM \`" + table + "\` WHERE DATE(usage_start_time) >= @startDate AND DATE(usage_start_time) < @endDate GROUP BY usage_date, service, currency, region ORDER BY usage_date";
-  const endpoint = "https://bigquery.googleapis.com/bigquery/v2/projects/" + encodeURIComponent(externalAccountId) + "/queries";
+  const projectEndpoint = "https://bigquery.googleapis.com/bigquery/v2/projects/" + encodeURIComponent(externalAccountId);
+  const queryEndpoint = projectEndpoint + "/queries";
   const rows: BillingRow[] = [];
   let pageToken: string | undefined;
+  let jobId: string | undefined;
+  let firstRequest = true;
+  let pendingPolls = 0;
   try {
-    do {
-      const response = await fetch(endpoint + (pageToken ? "?pageToken=" + encodeURIComponent(pageToken) : ""), {
-        method: "POST", headers: { authorization: "Bearer " + accessToken.token, "content-type": "application/json" },
-        body: JSON.stringify({ query: sql, useLegacySql: false, parameterMode: "NAMED", queryParameters: [
+    while (true) {
+      const url = firstRequest
+        ? queryEndpoint
+        : projectEndpoint + "/queries/" + encodeURIComponent(jobId!) + "?maxResults=10000&timeoutMs=10000" + (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : "");
+      const response = await fetch(url, {
+        method: firstRequest ? "POST" : "GET",
+        headers: { authorization: "Bearer " + accessToken.token, "content-type": "application/json" },
+        ...(firstRequest ? { body: JSON.stringify({ query: sql, useLegacySql: false, parameterMode: "NAMED", queryParameters: [
           { name: "startDate", parameterType: { type: "DATE" }, parameterValue: { value: window.start } },
           { name: "endDate", parameterType: { type: "DATE" }, parameterValue: { value: window.end } }
-        ], maxResults: 10000 }),
+        ], maxResults: 10000, timeoutMs: 10000 }) } : {}),
         signal: AbortSignal.timeout(60_000), cache: "no-store"
       });
       if (!response.ok) throw new Error("BigQuery API returned " + response.status);
-      const payload = await response.json() as { schema?: { fields?: Array<{ name: string }> }; rows?: Array<{ f: Array<{ v: string | null }> }>; pageToken?: string; jobComplete?: boolean };
+      const payload = await response.json() as { jobReference?: { jobId?: string }; schema?: { fields?: Array<{ name: string }> }; rows?: Array<{ f: Array<{ v: string | null }> }>; pageToken?: string; jobComplete?: boolean };
+      firstRequest = false;
+      jobId = jobId ?? payload.jobReference?.jobId;
       const fields = payload.schema?.fields?.map((field) => field.name) ?? [];
       const index = (name: string) => fields.indexOf(name);
       for (const item of payload.rows ?? []) {
@@ -187,8 +197,14 @@ async function syncGcp(externalAccountId: string, secret: Secret): Promise<Billi
         if (date && service && currency && amount) rows.push({ usageDate: date.slice(0, 10), service, currency, amount, region });
       }
       pageToken = payload.pageToken;
-      if (payload.jobComplete === false && !pageToken) throw new Error("BigQuery query is not complete.");
-    } while (pageToken);
+      if (payload.jobComplete === false && !pageToken) {
+        if (!jobId || pendingPolls >= 6) throw new Error("BigQuery query did not complete within the polling window.");
+        pendingPolls += 1;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      if (!pageToken) break;
+    }
   } catch { throw new ProviderApiError("GCP BigQuery billing export query failed. Check BigQuery Job User and dataset read permissions."); }
   return rows;
 }
