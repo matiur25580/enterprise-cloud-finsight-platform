@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { FormEvent } from "react";
 
 export default function SettingsForm({ organizationId, initialName, slug }: { organizationId: string; initialName: string; slug: string }) {
   const [name, setName] = useState(initialName);
@@ -8,7 +9,7 @@ export default function SettingsForm({ organizationId, initialName, slug }: { or
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
 
-  async function save(event: React.FormEvent<HTMLFormElement>) {
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setMessage(""); setError(false);
     try {
