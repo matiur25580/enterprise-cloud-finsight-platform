@@ -28,7 +28,7 @@ export async function enqueueCloudSync(input: { organizationId: string; cloudAcc
 export async function listCloudSyncJobs(organizationId: string, cloudAccountId: string, take = 20) {
   return withOrganization(prisma, organizationId, (tx) => tx.cloudSyncJob.findMany({
     where: { organizationId, cloudAccountId }, orderBy: { createdAt: "desc" }, take,
-    select: { id: true, status: true, trigger: true, attemptCount: true, maxAttempts: true, availableAt: true, startedAt: true, completedAt: true, errorCode: true, errorMessage: true, createdAt: true }
+    select: { id: true, status: true, trigger: true, attemptCount: true, maxAttempts: true, availableAt: true, startedAt: true, completedAt: true, errorCode: true, errorMessage: true, totalRows: true, importedRows: true, rejectedRows: true, duplicateRows: true, createdAt: true }
   }));
 }
 
