@@ -151,7 +151,12 @@ async function syncAzure(externalAccountId: string, secret: Secret, defaultCurre
           rows.push({ service, amount: String(amount), currency: typeof currency === "string" ? currency : defaultCurrency, usageDate });
         }
       }
-      nextUrl = payload.properties?.nextLink;
+      const candidateNextUrl = payload.properties?.nextLink;
+      if (candidateNextUrl) {
+        const parsedNextUrl = new URL(candidateNextUrl);
+        if (parsedNextUrl.protocol !== "https:" || parsedNextUrl.hostname !== "management.azure.com") throw new Error("Unexpected Azure pagination host.");
+        nextUrl = parsedNextUrl.toString();
+      } else nextUrl = undefined;
     }
   } catch { throw new ProviderApiError("Azure Cost Management query failed. Check subscription scope and Cost Management Reader permissions."); }
   return rows;
