@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolveVaultKv2Secret } from "./secret-resolver";
-import { ProviderCredentialConfigurationError, ProviderApiError } from "./provider-adapters";
+import { ProviderCredentialConfigurationError, ProviderApiError } from "./errors";
 
 const original = {
   address: process.env.VAULT_ADDR,
