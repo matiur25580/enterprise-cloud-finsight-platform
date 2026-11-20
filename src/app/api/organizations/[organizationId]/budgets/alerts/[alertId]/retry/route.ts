@@ -90,7 +90,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
           ...metadata, deliveryStatus, attempted: (typeof metadata.attempted === "number" ? metadata.attempted : 0) + outcome.attempted,
           delivered: (typeof metadata.delivered === "number" ? metadata.delivered : 0) + outcome.delivered,
           channels, channelResults: { ...(metadata.channelResults && typeof metadata.channelResults === "object" && !Array.isArray(metadata.channelResults) ? metadata.channelResults as Record<string, unknown> : {}), ...outcome.channelResults }, lastAttemptAt: new Date().toISOString()
-        } as Prisma.InputJsonValue } }
+        } as Prisma.InputJsonValue }
       });
     });
   } catch {
