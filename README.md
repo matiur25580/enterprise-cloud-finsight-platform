@@ -285,3 +285,10 @@ The organization workspace includes a governed recommendation backlog at `/works
 ### Evidence-backed recommendation generation
 
 From the recommendation backlog, authorized FinOps Analysts, Admins and Owners can generate review items from current billing intelligence. The generator turns month-to-date high-spend services into transparent 5% illustrative scenarios and recent detected cost anomalies into investigation tasks. It records source metrics and a stable signal key in recommendation evidence, skips previously generated signals across all workflow states, and writes an audit event for each new item. Generation is idempotent for the same monthly service signal or anomaly date. No cloud resource is changed automatically; generated savings are estimates and anomaly tasks carry zero estimated savings until independently assessed. Endpoint: `POST /api/organizations/{organizationId}/recommendations/generate`.
+
+
+### Recommendation impact measurement
+
+Recommendations marked `IMPLEMENTED` can be measured against imported billing records from the recommendation workflow. A reviewer selects two equal, non-overlapping 7–90 day date windows: a baseline before implementation and an observed period after implementation. The API aggregates the recommendation's currency and, when the generated evidence contains a service, scopes the comparison to that service; manually created recommendations without a service signal use organization-wide cloud spend. Both periods must contain imported cost rows; missing data is never interpreted as zero spend.
+
+Each immutable snapshot stores both windows, spend totals, row counts, scope and the calculated realized savings (baseline spend minus observed spend). A negative result indicates spend increased. Duplicate period pairs are rejected and every measurement is audited. This is a before/after billing comparison, not proof that the implementation caused the change; seasonality, workload shifts, pricing and other changes may affect results. The comparison does not perform currency conversion. Endpoint: `POST /api/organizations/{organizationId}/recommendations/{recommendationId}/impacts`.
