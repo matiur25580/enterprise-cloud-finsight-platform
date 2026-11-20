@@ -25,9 +25,15 @@ function requiredString(value: unknown, name: string): string {
   return value.trim();
 }
 function csvCell(value: string): string { return /[",\r\n]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value; }
+function decimalAmount(value: string): string {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) throw new ProviderApiError("A provider returned a non-numeric billing amount.");
+  if (Math.abs(numeric) < 0.000000005) return "0";
+  return numeric.toFixed(8).replace(/\\.?0+$/, "");
+}
 function rowsToCsv(rows: BillingRow[]) {
   const headers = ["service", "amount", "currency", "usageDate", "region"];
-  return { csv: [headers.join(","), ...rows.map((row) => [row.service, row.amount, row.currency, row.usageDate, row.region ?? ""].map(csvCell).join(","))].join("\n"), totalRows: rows.length };
+  return { csv: [headers.join(","), ...rows.map((row) => [row.service, decimalAmount(row.amount), row.currency, row.usageDate, row.region ?? ""].map(csvCell).join(","))].join("\n"), totalRows: rows.length };
 }
 
 async function resolveProviderSecret(input: { credentialRef: string | null; provider: CloudProvider; organizationId: string; cloudAccountId: string }): Promise<Secret> {
@@ -36,7 +42,7 @@ async function resolveProviderSecret(input: { credentialRef: string | null; prov
   if (!input.credentialRef || !endpoint || !token) throw new ProviderCredentialConfigurationError("Configure a per-account secret reference and the worker secret-resolver endpoint before enabling live sync.");
   let url: URL;
   try { url = new URL(endpoint); } catch { throw new ProviderCredentialConfigurationError("SECRET_RESOLVER_URL must be a valid HTTPS URL."); }
-  if (url.protocol !== "https:" && process.env.NODE_ENV !== "development") throw new ProviderCredentialConfigurationError("The secret resolver must use HTTPS.");
+  if ((url.protocol !== "https:" && process.env.NODE_ENV !== "development") || url.username || url.password || url.hash || url.search) throw new ProviderCredentialConfigurationError("SECRET_RESOLVER_URL must be an HTTPS endpoint without embedded credentials or query parameters.");
   const response = await fetch(url, {
     method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
     body: JSON.stringify({ reference: input.credentialRef, provider: input.provider, organizationId: input.organizationId, cloudAccountId: input.cloudAccountId }),
@@ -161,9 +167,12 @@ async function syncGcp(externalAccountId: string, secret: Secret): Promise<Billi
   const table = requiredString(secret.billingExportTable, "billingExportTable");
   const match = table.match(/^([a-z][a-z0-9-]{4,28})\.([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z0-9_]+)$/);
   if (!match || match[1] !== externalAccountId) throw new ProviderCredentialConfigurationError("GCP billingExportTable must be a fully qualified table in the registered project.");
-  const auth = new GoogleAuth({ credentials: credentials as never, scopes: ["https://www.googleapis.com/auth/bigquery"] });
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
+  let accessToken: { token?: string | null };
+  try {
+    const auth = new GoogleAuth({ credentials: credentials as never, scopes: ["https://www.googleapis.com/auth/bigquery"] });
+    const client = await auth.getClient();
+    accessToken = await client.getAccessToken();
+  } catch { throw new ProviderApiError("Google Cloud authentication failed. Check the configured Workload Identity or service-account permissions."); }
   if (!accessToken.token) throw new ProviderApiError("Google authentication did not return an access token.");
   const window = dateWindow();
   const sql = "SELECT DATE(usage_start_time) AS usage_date, service.description AS service, currency, location.region AS region, SUM(cost) AS amount FROM \`" + table + "\` WHERE DATE(usage_start_time) >= @startDate AND DATE(usage_start_time) < @endDate GROUP BY usage_date, service, currency, region ORDER BY usage_date";
