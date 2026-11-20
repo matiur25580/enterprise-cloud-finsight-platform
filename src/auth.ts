@@ -3,10 +3,12 @@ import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { verifyAndConsumeMfaFactor } from "@/lib/mfa";
 
 const credentialsSchema = z.object({
   email: z.string().trim().email().max(254),
-  password: z.string().min(8).max(128)
+  password: z.string().min(8).max(128),
+  code: z.string().trim().max(24).optional()
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -18,7 +20,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: "Email and password",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        code: { label: "Authenticator or recovery code", type: "text" }
       },
       async authorize(credentials) {
         const parsed = credentialsSchema.safeParse(credentials);
@@ -30,6 +33,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const valid = await compare(parsed.data.password, user.passwordHash);
         if (!valid) return null;
+        if (user.mfaEnabledAt) {
+          if (!user.mfaSecretEncrypted || !parsed.data.code) return null;
+          const factorValid = await verifyAndConsumeMfaFactor(user.id, user.mfaSecretEncrypted, parsed.data.code);
+          if (!factorValid) return null;
+        }
 
         return { id: user.id, email: user.email, name: user.name };
       }
