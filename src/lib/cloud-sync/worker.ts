@@ -5,6 +5,7 @@ import { importBillingCsv } from "@/lib/billing/import-service";
 import { executeProviderBillingSync } from "./provider-adapters";
 import { ProviderCredentialConfigurationError } from "./errors";
 import { deliverSyncAlert } from "./notifications";
+import { updateClaimedCloudSyncJob } from "./attempt-fence";
 
 type ClaimedJob = { id: string; organization_id: string; cloud_account_id: string; attempt_count: number; max_attempts: number };
 
@@ -93,20 +94,21 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
       where: { organizationId: job.organization_id, cloudAccountId: job.cloud_account_id, id: { not: job.id } },
       orderBy: { createdAt: "desc" }, select: { status: true }
     }));
-    await withOrganization(prisma, job.organization_id, async (tx) => {
-      await tx.cloudSyncJob.update({
-        where: { id: job.id },
-        data: {
-          status: completelyRejected ? CloudSyncJobStatus.FAILED : CloudSyncJobStatus.SUCCEEDED,
-          completedAt: new Date(),
-          errorCode: imported.rejectedRows > 0 ? "BILLING_ROWS_REJECTED" : null,
-          errorMessage: imported.rejectedRows > 0 ? imported.rejectedRows + " billing row(s) were rejected by the canonical import validator." : null,
-          totalRows: imported.totalRows, importedRows: imported.importedRows,
-          rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows
-        }
+    const finalized = await withOrganization(prisma, job.organization_id, async (tx) => {
+      const claimed = await updateClaimedCloudSyncJob(tx, job, {
+        status: completelyRejected ? CloudSyncJobStatus.FAILED : CloudSyncJobStatus.SUCCEEDED,
+        completedAt: new Date(),
+        errorCode: imported.rejectedRows > 0 ? "BILLING_ROWS_REJECTED" : null,
+        errorMessage: imported.rejectedRows > 0 ? imported.rejectedRows + " billing row(s) were rejected by the canonical import validator." : null,
+        totalRows: imported.totalRows, importedRows: imported.importedRows,
+        rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows
       });
+      if (!claimed) return false;
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncedAt: completelyRejected ? undefined : new Date(), lastSyncAttemptAt: new Date() } });
+      return true;
     });
+    // A newer worker owns this job now. Do not emit stale completion audits or alerts.
+    if (!finalized) return;
     await writeSyncAudit(job, completelyRejected ? "CLOUD_SYNC_FAILED" : "CLOUD_SYNC_SUCCEEDED", {
       attempt: job.attempt_count, totalRows: imported.totalRows, importedRows: imported.importedRows,
       rejectedRows: imported.rejectedRows, duplicateRows: imported.duplicateRows,
@@ -121,19 +123,19 @@ export async function processCloudSyncJob(job: ClaimedJob): Promise<void> {
     const blocked = error instanceof ProviderCredentialConfigurationError;
     const message = error instanceof Error ? error.message : "Cloud billing synchronization failed.";
     const retry = !blocked && job.attempt_count < job.max_attempts;
-    await withOrganization(prisma, job.organization_id, async (tx) => {
-      await tx.cloudSyncJob.update({
-        where: { id: job.id },
-        data: {
-          status: blocked ? CloudSyncJobStatus.BLOCKED : retry ? CloudSyncJobStatus.QUEUED : CloudSyncJobStatus.FAILED,
-          availableAt: retry ? new Date(Date.now() + Math.min(60, 2 ** job.attempt_count) * 60_000) : undefined,
-          completedAt: retry ? null : new Date(),
-          errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED",
-          errorMessage: message.slice(0, 1000)
-        }
+    const finalized = await withOrganization(prisma, job.organization_id, async (tx) => {
+      const claimed = await updateClaimedCloudSyncJob(tx, job, {
+        status: blocked ? CloudSyncJobStatus.BLOCKED : retry ? CloudSyncJobStatus.QUEUED : CloudSyncJobStatus.FAILED,
+        availableAt: retry ? new Date(Date.now() + Math.min(60, 2 ** job.attempt_count) * 60_000) : undefined,
+        completedAt: retry ? null : new Date(),
+        errorCode: blocked ? "PROVIDER_CREDENTIALS_NOT_CONFIGURED" : "SYNC_EXECUTION_FAILED",
+        errorMessage: message.slice(0, 1000)
       });
+      if (!claimed) return false;
       await tx.cloudAccount.update({ where: { id: job.cloud_account_id }, data: { lastSyncAttemptAt: new Date() } });
+      return true;
     });
+    if (!finalized) return;
     if (blocked || !retry) {
       await writeSyncAudit(job, blocked ? "CLOUD_SYNC_BLOCKED" : "CLOUD_SYNC_FAILED", {
         attempt: job.attempt_count, maxAttempts: job.max_attempts,
