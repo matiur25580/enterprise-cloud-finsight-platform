@@ -52,6 +52,7 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await hash(parsed.data.password, 12);
+    // Consume the one-time token and rotate the session version atomically to prevent reuse.
     const consumed = await prisma.$transaction(async (tx) => {
       const result = await tx.passwordResetToken.deleteMany({
         where: { tokenHash, expiresAt: { gt: now } }
