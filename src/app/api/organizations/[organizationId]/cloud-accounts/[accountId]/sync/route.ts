@@ -9,6 +9,7 @@ import { consumeApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
+// Centralize the membership and cloud-write permission check for both sync endpoints.
 async function authorize(organizationId: string, userId: string) {
   const membership = await withUserContext(prisma, userId, (tx) => tx.membership.findFirst({ where: { organizationId, userId }, select: { role: true } }));
   return membership && hasPermission(membership.role, "cloud:write");
