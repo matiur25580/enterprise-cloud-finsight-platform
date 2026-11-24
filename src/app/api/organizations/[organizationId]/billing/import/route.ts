@@ -9,6 +9,7 @@ import { consumeApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+// Authorize the organization member and validate upload limits before parsing billing data.
 export async function POST(request: Request, { params }: { params: Promise<{ organizationId: string }> }) {
   try {
     const session = await auth();
