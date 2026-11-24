@@ -3,6 +3,7 @@ const shutdown = () => { stopping = true; };
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
+// Run scheduled and queued sync work under the dedicated, least-privilege worker database role.
 async function main() {
   const workerDatabaseUrl = process.env.SYNC_WORKER_DATABASE_URL;
   if (!workerDatabaseUrl) throw new Error("SYNC_WORKER_DATABASE_URL is required for the isolated sync worker database role.");
